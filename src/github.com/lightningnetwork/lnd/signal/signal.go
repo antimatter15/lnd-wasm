@@ -7,8 +7,8 @@ package signal
 
 import (
 	"os"
-	"os/signal"
-	"syscall"
+	// "os/signal"
+	// "syscall"
 )
 
 var (
@@ -27,14 +27,14 @@ var (
 )
 
 func init() {
-	signalsToCatch := []os.Signal{
-		os.Interrupt,
-		os.Kill,
-		syscall.SIGABRT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-	}
-	signal.Notify(interruptChannel, signalsToCatch...)
+	// signalsToCatch := []os.Signal{
+	// 	os.Interrupt,
+	// 	os.Kill,
+	// 	syscall.SIGABRT,
+	// 	syscall.SIGTERM,
+	// 	syscall.SIGQUIT,
+	// }
+	// signal.Notify(interruptChannel, signalsToCatch...)
 	go mainInterruptHandler()
 }
 
