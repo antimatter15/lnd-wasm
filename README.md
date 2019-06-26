@@ -18,10 +18,12 @@ Go to `bridge` and run `yarn`
 
 Go to `jsdeps` and run `yarn && yarn build`
 
+Make sure you have globally installed `http-server` with `yarn global add http-server`
+
 Now, back in the root directory, run:
 
 ```
-python3 -m http.server --directory public/
+http-server public/
 ```
 
 Leave that running in the background.
