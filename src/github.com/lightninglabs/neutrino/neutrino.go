@@ -668,7 +668,6 @@ func NewChainService(cfg Config) (*ChainService, error) {
 
 	var err error
 
-	fmt.Println("start up filterdb")
 
 	s.FilterDB, err = filterdb.New(cfg.Database, cfg.ChainParams)
 	if err != nil {
@@ -687,7 +686,6 @@ func NewChainService(cfg Config) (*ChainService, error) {
 	}
 	s.BlockCache = lru.NewCache(blockCacheSize)
 
-	fmt.Println("start up headerstore")
 	s.BlockHeaders, err = headerfs.NewBlockHeaderStore(
 		cfg.DataDir, cfg.Database, &cfg.ChainParams,
 	)
@@ -702,7 +700,6 @@ func NewChainService(cfg Config) (*ChainService, error) {
 		return nil, err
 	}
 
-	fmt.Println("start up blckman")
 
 	bm, err := newBlockManager(&s, s.firstPeerConnect)
 	if err != nil {
@@ -803,7 +800,6 @@ func NewChainService(cfg Config) (*ChainService, error) {
 	}
 	s.connManager = cmgr
 
-	fmt.Println("start up peristent peers")
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -822,7 +818,6 @@ func NewChainService(cfg Config) (*ChainService, error) {
 		})
 	}
 
-	fmt.Println("start up uxto scan")
 
 	s.utxoScanner = NewUtxoScanner(&UtxoScannerConfig{
 		BestSnapshot: s.BestBlock,
@@ -837,7 +832,6 @@ func NewChainService(cfg Config) (*ChainService, error) {
 		},
 	})
 
-	fmt.Println("start up broadcaster")
 
 	s.broadcaster = pushtx.NewBroadcaster(&pushtx.Config{
 		Broadcast: func(tx *wire.MsgTx) error {

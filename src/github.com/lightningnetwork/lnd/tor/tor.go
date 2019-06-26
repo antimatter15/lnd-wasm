@@ -177,7 +177,6 @@ func ResolveTCPAddr(address, socksAddr string) (*net.TCPAddr, error) {
 		return nil, err
 	}
 
-	fmt.Println("looking up host")
 	ip, err := LookupHost(host, socksAddr)
 	if err != nil {
 		return nil, err

@@ -85,7 +85,6 @@ func newHeaderIndex(db walletdb.DB, indexType HeaderType) (*headerIndex, error) 
 	// necessary for functioning of the index. If these buckets has already
 	// been created, then we can exit early.
 	err := walletdb.Update(db, func(tx walletdb.ReadWriteTx) error {
-		fmt.Println("doing index tx")
 		_, err := tx.CreateTopLevelBucket(indexBucket)
 		return err
 
@@ -138,7 +137,6 @@ func (h headerBatch) Swap(i, j int) {
 
 // addHeaders writes a batch of header entries in a single atomic batch
 func (h *headerIndex) addHeaders(batch headerBatch) error {
-	fmt.Println("adding headers")
 	// If we're writing a 0-length batch, make no changes and return.
 	if len(batch) == 0 {
 		return nil
@@ -149,7 +147,6 @@ func (h *headerIndex) addHeaders(batch headerBatch) error {
 	sort.Sort(batch)
 
 	return walletdb.Update(h.db, func(tx walletdb.ReadWriteTx) error {
-		fmt.Println("updating insid ething")
 		rootBucket := tx.ReadWriteBucket(indexBucket)
 
 		var tipKey []byte
@@ -177,16 +174,13 @@ func (h *headerIndex) addHeaders(batch headerBatch) error {
 		for _, header := range batch {
 
 			var heightBytes [4]byte
-			fmt.Println("at prolem", header)
 			binary.BigEndian.PutUint32(heightBytes[:], header.height)
 
-			fmt.Println("did this work")
 			err := rootBucket.Put(header.hash[:], heightBytes[:])
 			if err != nil {
 				return err
 			}
 
-			fmt.Println("did this or that")
 
 			// TODO(roasbeef): need to remedy if side-chain
 			// tracking added
@@ -196,7 +190,6 @@ func (h *headerIndex) addHeaders(batch headerBatch) error {
 			}
 		}
 
-		fmt.Println("after problmes")
 		return rootBucket.Put(tipKey, chainTipHash[:])
 	})
 }

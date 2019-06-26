@@ -1,7 +1,7 @@
 package bbolt
 
 import (
-	// "errors"
+	"errors"
 	"fmt"
 	// "hash/fnv"
 	// "log"
@@ -10,6 +10,7 @@ import (
 	// "sort"
 	// "sync"
 	"time"
+	"syscall/js"
 	// "unsafe"
 )
 
@@ -121,6 +122,8 @@ type DB struct {
 	// AllocSize int
 
 	path     string
+
+	level    js.Value
 	// openFile func(string, int, os.FileMode) (*os.File, error)
 	// file     *os.File
 	// dataref  []byte // mmap'ed readonly, write throws SEGV
@@ -172,11 +175,44 @@ func (db *DB) String() string {
 	return fmt.Sprintf("DB<%q>", db.path)
 }
 
+
+
+type callbackResponse struct {
+    err js.Value
+    value js.Value
+}
+
 // Open creates and opens a database at the given path.
 // If the file does not exist then it will be created automatically.
 // Passing in nil options will cause Bolt to open the database with the default options.
 func Open(path string, mode os.FileMode, options *Options) (*DB, error) {
-	return nil, nil
+
+	done := make(chan callbackResponse)
+    callback := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+        done <- callbackResponse{ err: args[0], value: args[1] }
+        return nil
+    })
+    defer callback.Release()    
+    levelOptions := map[string]interface{}{
+        // "prefix": "level-js-",
+        // "version": 1
+    }
+    js.Global().Get("Level").Invoke(path, levelOptions, callback)
+
+    result := <-done
+    if result.err.Truthy() {
+        return nil, errors.New(result.err.String())
+    }
+
+
+
+	db := &DB{
+		path: path,	
+		level: result.value,
+	}
+	return db, nil
+
+	// return nil, nil
 	// db := &DB{
 	// 	opened: true,
 	// }
@@ -544,7 +580,19 @@ func (db *DB) Begin(writable bool) (*Tx, error) {
 	// 	return db.beginRWTx()
 	// }
 	// return db.beginTx()
-	return nil, nil
+
+	// bucket := js.Global().Get("SubLevelDown").Invoke(db.level, "(root)")
+	
+	tx := &Tx{
+		writable: writable,
+		db: db,
+	}
+	tx.root = &Bucket{
+    	sublevel: db.level,
+    	tx:     tx,
+    }
+
+	return tx, nil
 }
 
 // func (db *DB) beginTx() (*Tx, error) {
@@ -678,10 +726,10 @@ func (db *DB) Begin(writable bool) (*Tx, error) {
 //
 // Attempting to manually commit or rollback within the function will cause a panic.
 func (db *DB) Update(fn func(*Tx) error) error {
-	// t, err := db.Begin(true)
-	// if err != nil {
-	// 	return err
-	// }
+	t, err := db.Begin(true)
+	if err != nil {
+		return err
+	}
 
 	// // Make sure the transaction rolls back in the event of a panic.
 	// defer func() {
@@ -694,12 +742,12 @@ func (db *DB) Update(fn func(*Tx) error) error {
 	// t.managed = true
 
 	// // If an error is returned from the function then rollback and return error.
-	// err = fn(t)
+	err = fn(t)
 	// t.managed = false
-	// if err != nil {
+	if err != nil {
 	// 	_ = t.Rollback()
-	// 	return err
-	// }
+		return err
+	}
 
 	// return t.Commit()
 	return nil
@@ -710,10 +758,10 @@ func (db *DB) Update(fn func(*Tx) error) error {
 //
 // Attempting to manually rollback within the function will cause a panic.
 func (db *DB) View(fn func(*Tx) error) error {
-	// t, err := db.Begin(false)
-	// if err != nil {
-	// 	return err
-	// }
+	t, err := db.Begin(false)
+	if err != nil {
+		return err
+	}
 
 	// // Make sure the transaction rolls back in the event of a panic.
 	// defer func() {
@@ -725,13 +773,13 @@ func (db *DB) View(fn func(*Tx) error) error {
 	// // Mark as a managed tx so that the inner function cannot manually rollback.
 	// t.managed = true
 
-	// // If an error is returned from the function then pass it through.
-	// err = fn(t)
+	// If an error is returned from the function then pass it through.
+	err = fn(t)
 	// t.managed = false
-	// if err != nil {
+	if err != nil {
 	// 	_ = t.Rollback()
-	// 	return err
-	// }
+		return err
+	}
 
 	// return t.Rollback()
 	return nil
@@ -777,7 +825,8 @@ func (db *DB) Batch(fn func(*Tx) error) error {
 	// 	err = db.Update(fn)
 	// }
 	// return err
-	return nil
+	// return nil
+	return db.Update(fn)
 }
 
 // type call struct {

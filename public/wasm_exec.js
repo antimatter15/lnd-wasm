@@ -126,6 +126,12 @@
                 
                 
             },
+            close(fd, callback){
+                bfs.close(fd, (err) => {
+                    // console.log('CLOSE', fd, err)
+                    callback(err || null) // golang doesn't recognize undefined === null
+                })
+            },
             open(path, flags, mode, callback) {
                 // const err = new Error("not implemented");
                 // err.code = "ENOSYS";
@@ -134,7 +140,7 @@
                 let flag_str = flagsToPermissionStringMap[flags];
                 
                 bfs.open(path, flag_str, mode, (err, res) => {
-                    console.log('OPEN', path, flag_str, mode, '->', res)    
+                    // console.log('OPEN', path, flag_str, mode, '->', res)    
                     callback(err, res)
                 })
             },
@@ -143,19 +149,19 @@
                 // err.code = "ENOSYS";
                 // callback(err);
 
-                console.log('READ', fd, buffer, offset, length, position)
+                // console.log('READ', fd, buffer, offset, length, position)
                 bfs.read(...arguments)
             },
             fsync(fd, callback) {
                 callback(null);
             },
             mkdir(path, perm, callback){
-                console.log('MKDIR', path, perm)
+                // console.log('MKDIR', path, perm)
                 bfs.mkdir(...arguments)
             },
             fstat(fd, callback){
                 bfs.fstat(fd, (err, res) => {
-                    console.log('FSTAT', fd)
+                    // console.log('FSTAT', fd)
                     callback(err, fixStat(res))
                 })
             },

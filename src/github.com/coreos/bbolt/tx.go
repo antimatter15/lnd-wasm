@@ -1,7 +1,7 @@
 package bbolt
 
 import (
-	// "fmt"
+	"fmt"
 	// "io"
 	// "os"
 	// "sort"
@@ -22,11 +22,11 @@ import (
 // are using them. A long running read transaction can cause the database to
 // quickly grow.
 type Tx struct {
-	// writable       bool
+	writable       bool
 	// managed        bool
-	// db             *DB
+	db             *DB
 	// meta           *meta
-	// root           Bucket
+	root           *Bucket
 	// pages          map[pgid]*page
 	// stats          TxStats
 	// commitHandlers []func()
@@ -79,18 +79,17 @@ type Tx struct {
 
 // Writable returns whether the transaction can perform write operations.
 func (tx *Tx) Writable() bool {
-	// return tx.writable
-	return false
+	return tx.writable
 }
 
 // Cursor creates a cursor associated with the root bucket.
 // All items in the cursor will return a nil value because all root bucket keys point to buckets.
 // The cursor is only valid as long as the transaction is open.
 // Do not use a cursor after the transaction is closed.
-func (tx *Tx) Cursor() *Cursor {
-	// return tx.root.Cursor()
-	return nil
-}
+// func (tx *Tx) Cursor() *Cursor {
+// 	// return tx.root.Cursor()
+// 	return nil
+// }
 
 // Stats retrieves a copy of the current transaction statistics.
 // func (tx *Tx) Stats() TxStats {
@@ -101,45 +100,43 @@ func (tx *Tx) Cursor() *Cursor {
 // Returns nil if the bucket does not exist.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (tx *Tx) Bucket(name []byte) *Bucket {
-	// return tx.root.Bucket(name)
-	return nil
+	return tx.root.Bucket(name)
 }
 
 // CreateBucket creates a new bucket.
 // Returns an error if the bucket already exists, if the bucket name is blank, or if the bucket name is too long.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (tx *Tx) CreateBucket(name []byte) (*Bucket, error) {
-	// return tx.root.CreateBucket(name)
-	return nil, nil
+	return tx.root.CreateBucket(name)
 }
 
 // CreateBucketIfNotExists creates a new bucket if it doesn't already exist.
 // Returns an error if the bucket name is blank, or if the bucket name is too long.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (tx *Tx) CreateBucketIfNotExists(name []byte) (*Bucket, error) {
-	// return tx.root.CreateBucketIfNotExists(name)
-	return nil, nil
+	return tx.root.CreateBucketIfNotExists(name)
+	// return nil, nil
 }
 
 // DeleteBucket deletes a bucket.
 // Returns an error if the bucket cannot be found or if the key represents a non-bucket value.
 func (tx *Tx) DeleteBucket(name []byte) error {
-	// return tx.root.DeleteBucket(name)
-	return nil
+	return tx.root.DeleteBucket(name)
+	// return nil
 }
 
 // ForEach executes a function for each bucket in the root.
 // If the provided function returns an error then the iteration is stopped and
 // the error is returned to the caller.
 func (tx *Tx) ForEach(fn func(name []byte, b *Bucket) error) error {
-	// return tx.root.ForEach(func(k, v []byte) error {
-	// 	return fn(k, tx.root.Bucket(k))
-	// })
-	return nil
+	return tx.root.ForEach(func(k, v []byte) error {
+		return fn(k, tx.root.Bucket(k))
+	})
 }
 
 // OnCommit adds a handler function to be executed after the transaction successfully commits.
 func (tx *Tx) OnCommit(fn func()) {
+	fmt.Println("TODO: onCommit handler")
 	// tx.commitHandlers = append(tx.commitHandlers, fn)
 }
 

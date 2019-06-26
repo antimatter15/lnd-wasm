@@ -3,6 +3,7 @@ package tor
 import (
 	"errors"
 	"net"
+	"fmt"
 )
 
 // TODO: this interface and its implementations should ideally be moved
@@ -38,6 +39,7 @@ func (r *ClearNet) Dial(network, address string) (net.Conn, error) {
 
 // LookupHost for regular network uses the net.LookupHost function
 func (r *ClearNet) LookupHost(host string) ([]string, error) {
+	fmt.Println("Resolving names", host)
 	return net.LookupHost(host)
 }
 
@@ -48,6 +50,7 @@ func (r *ClearNet) LookupSRV(service, proto, name string) (string, []*net.SRV, e
 
 // ResolveTCPAddr for regular network uses net.ResolveTCPAddr function
 func (r *ClearNet) ResolveTCPAddr(network, address string) (*net.TCPAddr, error) {
+	fmt.Println("Resolving TCP Address", address)
 	// return net.ResolveTCPAddr(network, address)
 	return nil, nil
 }

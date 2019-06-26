@@ -201,7 +201,6 @@ func Main() error {
 	serverOpts := []grpc.ServerOption{}
 	restDialOpts := []grpc.DialOption{}
 
-	fmt.Println("made server opts obj")
 
 	// Before starting the wallet, we'll create and start our Neutrino
 	// light client instance, if enabled, in order to allow it to sync
@@ -291,7 +290,6 @@ func Main() error {
 		}
 	}
 
-	fmt.Println("chainc ontrol")
 	// With the information parsed from the configuration, create valid
 	// instances of the pertinent interfaces required to operate the
 	// Lightning Network Daemon.

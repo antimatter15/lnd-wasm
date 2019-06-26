@@ -2,8 +2,10 @@ package bbolt
 
 import (
 	// "bytes"
-	// "fmt"
+	"errors"
+	"fmt"
 	// "unsafe"
+	"syscall/js"
 )
 
 // const (
@@ -27,6 +29,9 @@ import (
 
 // Bucket represents a collection of key/value pairs inside the database.
 type Bucket struct {
+	tx     *Tx
+	sublevel     js.Value
+
 	// *bucket
 	// tx       *Tx                // the associated transaction
 	// buckets  map[string]*Bucket // subbucket cache
@@ -45,8 +50,7 @@ type Bucket struct {
 
 // Tx returns the tx of the bucket.
 func (b *Bucket) Tx() *Tx {
-	// return b.tx
-	return nil
+	return b.tx
 }
 
 // Root returns the root of the bucket.
@@ -57,9 +61,7 @@ func (b *Bucket) Tx() *Tx {
 
 // Writable returns whether the bucket is writable.
 func (b *Bucket) Writable() bool {
-	// return b.tx.writable
-	// return nil
-	return false
+	return b.tx.writable
 }
 
 // Cursor creates a cursor associated with the bucket.
@@ -81,7 +83,9 @@ func (b *Bucket) Cursor() *Cursor {
 // Returns nil if the bucket does not exist.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (b *Bucket) Bucket(name []byte) *Bucket {
-	return nil
+	bucket, _ := b.CreateBucketIfNotExists(name)
+	return bucket
+	// return nil
 	// if b.buckets != nil {
 	// 	if child := b.buckets[string(name)]; child != nil {
 	// 		return child
@@ -178,7 +182,8 @@ func (b *Bucket) CreateBucket(key []byte) (*Bucket, error) {
 	// b.page = nil
 
 	// return b.Bucket(key), nil
-	return nil, nil
+	// return nil, nil
+	return b.CreateBucketIfNotExists(key)
 }
 
 // CreateBucketIfNotExists creates a new bucket if it doesn't already exist and returns a reference to it.
@@ -192,12 +197,19 @@ func (b *Bucket) CreateBucketIfNotExists(key []byte) (*Bucket, error) {
 	// 	return nil, err
 	// }
 	// return child, nil
-	return nil, nil
+	// return nil, nil
+	bucket := js.Global().Get("SubLevelDown").Invoke(b.sublevel, string(key))
+	// fmt.Println("create bucket ifnot exists", bucket)
+    return &Bucket{
+    	sublevel: bucket,
+    	tx:     b.tx,
+    }, nil
 }
 
 // DeleteBucket deletes a bucket at the given key.
 // Returns an error if the bucket does not exists, or if the key represents a non-bucket value.
 func (b *Bucket) DeleteBucket(key []byte) error {
+	fmt.Println("delete bucket")
 	// if b.tx.db == nil {
 	// 	return ErrTxClosed
 	// } else if !b.Writable() {
@@ -259,8 +271,48 @@ func (b *Bucket) Get(key []byte) []byte {
 	// 	return nil
 	// }
 	// return v
-	return nil
+	// return nil
+
+
+
+
+	done := make(chan callbackResponse)
+    callback := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+        done <- callbackResponse{ err: args[0], value: args[1] }
+        return nil
+    })
+    defer callback.Release()    
+    getOptions := map[string]interface{}{
+    	"valueEncoding": "binary",
+    }
+    b.sublevel.Call("get", string(key), getOptions, callback)
+
+    result := <-done
+    if result.err.Truthy() {
+        return nil
+    }
+
+    // numBytes := result.value.Get("length").Int()
+    // buffer := make([]byte, numBytes)
+    // ta := js.TypedArrayOf(buffer)
+    // ta.Call("set", result.value)
+    // defer ta.Release()
+
+    buffer := bytesFromTypedArray(result.value)
+
+    return buffer
 }
+
+
+func bytesFromTypedArray(value js.Value) []byte {
+	numBytes := value.Get("length").Int()
+    buffer := make([]byte, numBytes)
+    ta := js.TypedArrayOf(buffer)
+    ta.Call("set", value)
+    defer ta.Release()
+    return buffer
+}
+
 
 // Put sets the value for a key in the bucket.
 // If the key exist then its previous value will be overwritten.
@@ -292,7 +344,47 @@ func (b *Bucket) Put(key []byte, value []byte) error {
 	// key = cloneBytes(key)
 	// c.node().put(key, key, value, 0, 0)
 
-	return nil
+	// return nil
+
+	// if b.tx.db == nil {
+	// 	return ErrTxClosed
+	// } else 
+	if !b.Writable() {
+		return ErrTxNotWritable
+	} else if len(key) == 0 {
+		return ErrKeyRequired
+	} 
+	// else if len(key) > MaxKeySize {
+	// 	return ErrKeyTooLarge
+	// } else if int64(len(value)) > MaxValueSize {
+	// 	return ErrValueTooLarge
+	// }
+
+
+	done := make(chan error)
+
+    callback := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+        if len(args) > 0 {
+        	done <- errors.New(args[0].String())
+        }else{
+        	done <- nil
+        }
+        // done <- callbackResponse{ err: args[0], value: js.Null() }
+
+        return nil
+    })
+    defer callback.Release()    
+
+    // TODO: insert some sort of finance pun
+    putOptions := map[string]interface{}{
+    	"valueEncoding": "binary",
+    }
+    ta := js.TypedArrayOf(value)
+    defer ta.Release()
+    b.sublevel.Call("put", string(key), ta, putOptions, callback)
+
+
+    return <-done
 }
 
 // Delete removes a key from the bucket.
