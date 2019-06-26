@@ -1,10 +1,10 @@
 package lnd
 
 import (
-	"fmt"
-	"io"
-	"os"
-	"path/filepath"
+	// "fmt"
+	// "io"
+	// "os"
+	// "path/filepath"
 
 	"github.com/btcsuite/btcd/connmgr"
 	"github.com/btcsuite/btclog"
@@ -169,23 +169,23 @@ var subsystemLoggers = map[string]btclog.Logger{
 // create roll files in the same directory.  It must be called before the
 // package-global log rotator variables are used.
 func initLogRotator(logFile string, MaxLogFileSize int, MaxLogFiles int) {
-	logDir, _ := filepath.Split(logFile)
-	err := os.MkdirAll(logDir, 0700)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
-		os.Exit(1)
-	}
-	r, err := rotator.New(logFile, int64(MaxLogFileSize*1024), false, MaxLogFiles)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
-		os.Exit(1)
-	}
+	// logDir, _ := filepath.Split(logFile)
+	// err := os.MkdirAll(logDir, 0700)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// r, err := rotator.New(logFile, int64(MaxLogFileSize*1024), false, MaxLogFiles)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
+	// 	os.Exit(1)
+	// }
 
-	pr, pw := io.Pipe()
-	go r.Run(pr)
+	// pr, pw := io.Pipe()
+	// go r.Run(pr)
 
-	logWriter.RotatorPipe = pw
-	logRotator = r
+	// logWriter.RotatorPipe = pw
+	// logRotator = r
 }
 
 // setLogLevel sets the logging level for provided subsystem.  Invalid
