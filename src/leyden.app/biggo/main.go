@@ -11,7 +11,7 @@ import (
 	// "net"
 	// "encoding/hex"
 	// "github.com/antimatter15/lnwasm/net"
-	// "github.com/lightningnetwork/lnd"
+	"github.com/lightningnetwork/lnd"
 	// "github.com/lightningnetwork/lnd/brontide"
 	// "sync"
 	// "github.com/antimatter15/lnwasm/lnwire"
@@ -23,5 +23,5 @@ import (
 
 func main(){
 	fmt.Println("hello!")
-	// lnd.Main()
+	lnd.Main()
 }
