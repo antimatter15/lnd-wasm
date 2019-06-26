@@ -30,6 +30,8 @@ Leave that running in the background.
 
 ```
 env GOOS=js GOARCH=wasm go build -o public/wire.wasm leyden.app/wire
+
+env GOOS=js GOARCH=wasm go build -o public/biggo.wasm leyden.app/biggo
 ```
 
 ```
