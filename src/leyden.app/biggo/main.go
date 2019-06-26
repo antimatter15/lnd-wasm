@@ -23,5 +23,6 @@ import (
 
 func main(){
 	fmt.Println("hello!")
-	lnd.Main()
+	err := lnd.Main()
+	fmt.Println(err)
 }

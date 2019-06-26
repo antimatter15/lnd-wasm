@@ -48,7 +48,8 @@ func (r *ClearNet) LookupSRV(service, proto, name string) (string, []*net.SRV, e
 
 // ResolveTCPAddr for regular network uses net.ResolveTCPAddr function
 func (r *ClearNet) ResolveTCPAddr(network, address string) (*net.TCPAddr, error) {
-	return net.ResolveTCPAddr(network, address)
+	// return net.ResolveTCPAddr(network, address)
+	return nil, nil
 }
 
 // ProxyNet is an implementation of the Net interface that defines behaviour

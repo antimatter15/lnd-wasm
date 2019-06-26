@@ -100,9 +100,12 @@ func Main() error {
 	// Load the configuration, and parse any command line options. This
 	// function will also set up logging properly.
 	loadedConfig, err := loadConfig()
+
 	if err != nil {
 		return err
 	}
+	fmt.Println("Loaded config", loadedConfig)
+
 	cfg = loadedConfig
 	defer func() {
 		if logRotator != nil {
@@ -181,15 +184,24 @@ func Main() error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	tlsCfg, restCreds, restProxyDest, err := getTLSConfig(cfg)
-	if err != nil {
-		return err
-	}
+	// *tls.Config, *credentials.TransportCredentials, string, error
+	// tlsCfg, restCreds, restProxyDest, err := getTLSConfig(cfg)
+	// if err != nil {
+	// 	return err
+	// }
 
-	serverCreds := credentials.NewTLS(tlsCfg)
-	serverOpts := []grpc.ServerOption{grpc.Creds(serverCreds)}
+	// serverCreds := credentials.NewTLS(tlsCfg)
+	// serverOpts := []grpc.ServerOption{grpc.Creds(serverCreds)}
 
-	restDialOpts := []grpc.DialOption{grpc.WithTransportCredentials(*restCreds)}
+	// restDialOpts := []grpc.DialOption{grpc.WithTransportCredentials(*restCreds)}
+
+	tlsCfg := &tls.Config{}
+	// restCreds := interface{}(nil) //&credentials.TransportCredentials{}
+	restProxyDest := ""
+	serverOpts := []grpc.ServerOption{}
+	restDialOpts := []grpc.DialOption{}
+
+	fmt.Println("made server opts obj")
 
 	// Before starting the wallet, we'll create and start our Neutrino
 	// light client instance, if enabled, in order to allow it to sync
@@ -279,6 +291,7 @@ func Main() error {
 		}
 	}
 
+	fmt.Println("chainc ontrol")
 	// With the information parsed from the configuration, create valid
 	// instances of the pertinent interfaces required to operate the
 	// Lightning Network Daemon.
@@ -309,7 +322,7 @@ func Main() error {
 		return err
 	}
 	idPrivKey.Curve = btcec.S256()
-
+	fmt.Println("torq ontrol")
 	if cfg.Tor.Active {
 		srvrLog.Infof("Proxying all network traffic via Tor "+
 			"(stream_isolation=%v)! NOTE: Ensure the backend node "+
@@ -382,6 +395,7 @@ func Main() error {
 		}
 	}
 
+	fmt.Println("server ontrol")
 	// Set up the core server which will listen for incoming peer
 	// connections.
 	server, err := newServer(
@@ -393,6 +407,7 @@ func Main() error {
 		return err
 	}
 
+	fmt.Println("autopilot")
 	// Set up an autopilot manager from the current config. This will be
 	// used to manage the underlying autopilot agent, starting and stopping
 	// it at will.
@@ -413,6 +428,7 @@ func Main() error {
 	}
 	defer atplManager.Stop()
 
+	fmt.Println("rpc")
 	// Initialize, and register our implementation of the gRPC interface
 	// exported by the rpcServer.
 	rpcServer, err := newRPCServer(

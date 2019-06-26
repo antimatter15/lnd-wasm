@@ -38,9 +38,61 @@
         global.TextDecoder = util.TextDecoder;
     } else {
         let outputBuf = "";
+        // https://github.com/golang/go/blob/master/src/syscall/fs_js.go
+
+        // This maps the integer permission modes from http://linux.die.net/man/3/open
+          // to node.js-specific file open permission strings at http://nodejs.org/api/fs.html#fs_fs_open_path_flags_mode_callback
+          // https://github.com/jvilk/BrowserFS/blob/master/src/generic/emscripten_fs.ts#L347
+        const flagsToPermissionStringMap = {
+            0/*O_RDONLY*/: 'r',
+            1/*O_WRONLY*/: 'r+',
+            2/*O_RDWR*/: 'r+',
+            64/*O_CREAT*/: 'r',
+            65/*O_WRONLY|O_CREAT*/: 'r+',
+            66/*O_RDWR|O_CREAT*/: 'r+',
+            129/*O_WRONLY|O_EXCL*/: 'rx+',
+            193/*O_WRONLY|O_CREAT|O_EXCL*/: 'rx+',
+            514/*O_RDWR|O_TRUNC*/: 'w+',
+            577/*O_WRONLY|O_CREAT|O_TRUNC*/: 'w',
+            578/*O_CREAT|O_RDWR|O_TRUNC*/: 'w+',
+            705/*O_WRONLY|O_CREAT|O_EXCL|O_TRUNC*/: 'wx',
+            706/*O_RDWR|O_CREAT|O_EXCL|O_TRUNC*/: 'wx+',
+            1024/*O_APPEND*/: 'a',
+            1025/*O_WRONLY|O_APPEND*/: 'a',
+            1026/*O_RDWR|O_APPEND*/: 'a+',
+            1089/*O_WRONLY|O_CREAT|O_APPEND*/: 'a',
+            1090/*O_RDWR|O_CREAT|O_APPEND*/: 'a+',
+            1153/*O_WRONLY|O_EXCL|O_APPEND*/: 'ax',
+            1154/*O_RDWR|O_EXCL|O_APPEND*/: 'ax+',
+            1217/*O_WRONLY|O_CREAT|O_EXCL|O_APPEND*/: 'ax',
+            1218/*O_RDWR|O_CREAT|O_EXCL|O_APPEND*/: 'ax+',
+            4096/*O_RDONLY|O_DSYNC*/: 'rs',
+            4098/*O_RDWR|O_DSYNC*/: 'rs+'
+          };
+
+          function fixStat(res){
+            if(res){
+                res.atimeMs = res.atime.getTime()
+                res.mtimeMs = res.mtime.getTime()
+                res.ctimeMs = res.ctime.getTime()
+            }
+            return res
+          }
+
         global.fs = {
-            constants: { O_WRONLY: -1, O_RDWR: -1, O_CREAT: -1, O_TRUNC: -1, O_APPEND: -1, O_EXCL: -1 }, // unused
+            constants: { 
+                O_RDONLY: 0,
+                O_WRONLY: 1, 
+                O_RDWR: 2, 
+                O_CREAT: 64, 
+                O_TRUNC: 512, 
+                O_APPEND: 1024, 
+                O_EXCL: 128, 
+            }, 
             writeSync(fd, buf) {
+                // console.log("WRITE SYNC", fd, buf)
+                // bfs.writeSync(fd, buf)
+
                 outputBuf += decoder.decode(buf);
                 const nl = outputBuf.lastIndexOf("\n");
                 if (nl != -1) {
@@ -49,26 +101,76 @@
                 }
                 return buf.length;
             },
+
             write(fd, buf, offset, length, position, callback) {
-                if (offset !== 0 || length !== buf.length || position !== null) {
-                    throw new Error("not implemented");
+                // if (offset !== 0 || length !== buf.length || position !== null) {
+                //     throw new Error("not implemented");
+                // }
+                // console.log(fd)
+                if(fd === 1){
+                    const n = this.writeSync(fd, buf);
+                    callback(null, n);
+                }else{
+
+
+                    const Buffer = BrowserFS.BFSRequire('buffer').Buffer
+                    
+                    buf = Buffer.from(buf);
+
+                    bfs.write(fd, buf, offset, length, position, (err, res) => {
+                        // console.log("WRITE", fd, buf, offset, length, position, '->', err, res)
+                        callback(err, res)
+                    })    
                 }
-                const n = this.writeSync(fd, buf);
-                callback(null, n);
+                
+                
+                
             },
             open(path, flags, mode, callback) {
-                const err = new Error("not implemented");
-                err.code = "ENOSYS";
-                callback(err);
+                // const err = new Error("not implemented");
+                // err.code = "ENOSYS";
+                // console.log('walp not implemented?')
+                // callback(err);
+                let flag_str = flagsToPermissionStringMap[flags];
+                
+                bfs.open(path, flag_str, mode, (err, res) => {
+                    console.log('OPEN', path, flag_str, mode, '->', res)    
+                    callback(err, res)
+                })
             },
             read(fd, buffer, offset, length, position, callback) {
-                const err = new Error("not implemented");
-                err.code = "ENOSYS";
-                callback(err);
+                // const err = new Error("not implemented");
+                // err.code = "ENOSYS";
+                // callback(err);
+
+                console.log('READ', fd, buffer, offset, length, position)
+                bfs.read(...arguments)
             },
             fsync(fd, callback) {
                 callback(null);
             },
+            mkdir(path, perm, callback){
+                console.log('MKDIR', path, perm)
+                bfs.mkdir(...arguments)
+            },
+            fstat(fd, callback){
+                bfs.fstat(fd, (err, res) => {
+                    console.log('FSTAT', fd)
+                    callback(err, fixStat(res))
+                })
+            },
+            stat(path, callback){
+              
+                bfs.stat(path, (err, res) => {
+                    // console.log('STAT', path, err, res)
+                    callback(err, fixStat(res))
+                })
+                // bfs.stat(...arguments)
+                // const err = new Error("not implemented");
+                // err.code = "ENOENT";
+                // callback(err, null)
+                // console.log(path, options, callback)
+            }
         };
     }
 
@@ -223,6 +325,8 @@
                         const fd = getInt64(sp + 8);
                         const p = getInt64(sp + 16);
                         const n = mem().getInt32(sp + 24, true);
+
+                        // console.log('synchronous writing stuff why thi si sbad')
                         fs.writeSync(fd, new Uint8Array(this._inst.exports.mem.buffer, p, n));
                     },
 

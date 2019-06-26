@@ -2,7 +2,15 @@
 <head>
 <meta charset="utf-8">
 <script src="wasm_exec.js"></script>
+<script src="deps.js"></script>
 <script>
+
+BrowserFS.configure({
+    fs: "InMemory"
+}, function(e) {
+    if (e) throw e;
+    global.bfs = BrowserFS.BFSRequire('fs')
+});
 
 const go = new Go();
 WebAssembly.instantiateStreaming(fetch("biggo.wasm"), go.importObject).then((result) => {

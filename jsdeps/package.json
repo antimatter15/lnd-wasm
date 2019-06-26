@@ -10,6 +10,7 @@
     "browserify": "^16.2.3"
   },
   "dependencies": {
+    "browserfs": "^2.0.0",
     "level": "^5.0.1",
     "level-transactions": "^2.1.4",
     "subleveldown": "^4.0.0"

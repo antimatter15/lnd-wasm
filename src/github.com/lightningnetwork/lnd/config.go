@@ -47,7 +47,7 @@ const (
 	defaultAdminMacFilename   = "admin.macaroon"
 	defaultReadMacFilename    = "readonly.macaroon"
 	defaultInvoiceMacFilename = "invoice.macaroon"
-	defaultLogLevel           = "info"
+	defaultLogLevel           = "debug"
 	defaultLogDirname         = "logs"
 	defaultLogFilename        = "lnd.log"
 	defaultRPCPort            = 10009
@@ -59,7 +59,7 @@ const (
 	// pending channels permitted per peer.
 	DefaultMaxPendingChannels = 1
 
-	defaultNoSeedBackup             = false
+	defaultNoSeedBackup             = true
 	defaultTrickleDelay             = 90 * 1000
 	defaultChanStatusSampleInterval = time.Minute
 	defaultChanEnableTimeout        = 19 * time.Minute
@@ -347,11 +347,13 @@ func loadConfig() (*config, error) {
 		MaxLogFiles:    defaultMaxLogFiles,
 		MaxLogFileSize: defaultMaxLogFileSize,
 		Bitcoin: &chainConfig{
+			Active: true,
+			TestNet3: true,
 			MinHTLC:       defaultBitcoinMinHTLCMSat,
 			BaseFee:       DefaultBitcoinBaseFeeMSat,
 			FeeRate:       DefaultBitcoinFeeRate,
 			TimeLockDelta: DefaultBitcoinTimeLockDelta,
-			Node:          "btcd",
+			Node:          "neutrino",
 		},
 		BtcdMode: &btcdConfig{
 			Dir:     defaultBtcdDir,
@@ -424,6 +426,7 @@ func loadConfig() (*config, error) {
 		Watchtower: &lncfg.Watchtower{
 			TowerDir: defaultTowerDir,
 		},
+		NoMacaroons: true,
 	}
 
 	// Pre-parse the command line options to pick up an alternative config
@@ -496,22 +499,22 @@ func loadConfig() (*config, error) {
 
 	// Create the lnd directory if it doesn't already exist.
 	funcName := "loadConfig"
-	if err := os.MkdirAll(lndDir, 0700); err != nil {
-		// Show a nicer error message if it's because a symlink is
-		// linked to a directory that does not exist (probably because
-		// it's not mounted).
-		if e, ok := err.(*os.PathError); ok && os.IsExist(err) {
-			if link, lerr := os.Readlink(e.Path); lerr == nil {
-				str := "is symlink %s -> %s mounted?"
-				err = fmt.Errorf(str, e.Path, link)
-			}
-		}
+	// if err := os.MkdirAll(lndDir, 0700); err != nil {
+	// 	// Show a nicer error message if it's because a symlink is
+	// 	// linked to a directory that does not exist (probably because
+	// 	// it's not mounted).
+	// 	if e, ok := err.(*os.PathError); ok && os.IsExist(err) {
+	// 		if link, lerr := os.Readlink(e.Path); lerr == nil {
+	// 			str := "is symlink %s -> %s mounted?"
+	// 			err = fmt.Errorf(str, e.Path, link)
+	// 		}
+	// 	}
 
-		str := "%s: Failed to create lnd directory: %v"
-		err := fmt.Errorf(str, funcName, err)
-		fmt.Fprintln(os.Stderr, err)
-		return nil, err
-	}
+	// 	str := "%s: Failed to create lnd directory: %v"
+	// 	err := fmt.Errorf(str, funcName, err)
+	// 	fmt.Fprintln(os.Stderr, err)
+	// 	return nil, err
+	// }
 
 	// As soon as we're done parsing configuration options, ensure all paths
 	// to directories and files are cleaned and expanded before attempting
@@ -577,6 +580,8 @@ func loadConfig() (*config, error) {
 	if cfg.Autopilot.MaxChannelSize > int64(MaxFundingAmount) {
 		cfg.Autopilot.MaxChannelSize = int64(MaxFundingAmount)
 	}
+
+
 
 	if _, err := validateAtplCfg(cfg.Autopilot); err != nil {
 		return nil, err
@@ -653,7 +658,6 @@ func loadConfig() (*config, error) {
 		return nil, errors.New("NAT traversal cannot be used when " +
 			"listening is disabled")
 	}
-
 	// Determine the active chain configuration and its parameters.
 	switch {
 	// At this moment, multiple active chains are not supported.
@@ -861,7 +865,6 @@ func loadConfig() (*config, error) {
 		// primary chain.
 		registeredChains.RegisterPrimaryChain(bitcoinChain)
 	}
-
 	// Ensure that the user didn't attempt to specify negative values for
 	// any of the autopilot params.
 	if cfg.Autopilot.MaxChannels < 0 {
@@ -888,7 +891,6 @@ func loadConfig() (*config, error) {
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
 	}
-
 	// Ensure that the specified values for the min and max channel size
 	// don't are within the bounds of the normal chan size constraints.
 	if cfg.Autopilot.MinChannelSize < int64(minChanFundingSize) {
@@ -970,7 +972,6 @@ func loadConfig() (*config, error) {
 		fmt.Fprintln(os.Stderr, usageMessage)
 		return nil, err
 	}
-
 	// At least one RPCListener is required. So listen on localhost per
 	// default.
 	if len(cfg.RawRPCListeners) == 0 {
@@ -1006,7 +1007,6 @@ func loadConfig() (*config, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// Add default port to all REST listener addresses if needed and remove
 	// duplicate addresses.
 	cfg.RESTListeners, err = lncfg.NormalizeAddresses(
@@ -1016,23 +1016,21 @@ func loadConfig() (*config, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// For each of the RPC listeners (REST+gRPC), we'll ensure that users
 	// have specified a safe combo for authentication. If not, we'll bail
 	// out with an error.
-	err = lncfg.EnforceSafeAuthentication(
-		cfg.RPCListeners, !cfg.NoMacaroons,
-	)
-	if err != nil {
-		return nil, err
-	}
-	err = lncfg.EnforceSafeAuthentication(
-		cfg.RESTListeners, !cfg.NoMacaroons,
-	)
-	if err != nil {
-		return nil, err
-	}
-
+	// err = lncfg.EnforceSafeAuthentication(
+	// 	cfg.RPCListeners, !cfg.NoMacaroons,
+	// )
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// err = lncfg.EnforceSafeAuthentication(
+	// 	cfg.RESTListeners, !cfg.NoMacaroons,
+	// )
+	// if err != nil {
+	// 	return nil, err
+	// }
 	// Remove the listening addresses specified if listening is disabled.
 	if cfg.DisableListen {
 		ltndLog.Infof("Listening on the p2p interface is disabled!")
@@ -1072,7 +1070,6 @@ func loadConfig() (*config, error) {
 			}
 		}
 	}
-
 	// Ensure that the specified minimum backoff is below or equal to the
 	// maximum backoff.
 	if cfg.MinBackoff > cfg.MaxBackoff {
@@ -1089,7 +1086,6 @@ func loadConfig() (*config, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// If the user provided private watchtower addresses, parse them to
 	// obtain the LN addresses.
 	if cfg.WtClient.IsActive() {
@@ -1108,7 +1104,6 @@ func loadConfig() (*config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Unable to parse node color: %v", err)
 	}
-
 	// Warn about missing config file only after all other configuration is
 	// done.  This prevents the warning on help messages and invalid
 	// options.  Note this should go directly before the return.

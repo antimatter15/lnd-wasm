@@ -94,6 +94,7 @@ type headerStore struct {
 func newHeaderStore(db walletdb.DB, filePath string,
 	hType HeaderType) (*headerStore, error) {
 
+
 	var flatFileName string
 	switch hType {
 	case Block:
@@ -106,6 +107,7 @@ func newHeaderStore(db walletdb.DB, filePath string,
 
 	flatFileName = filepath.Join(filePath, flatFileName)
 
+	fmt.Println("new headerstore")
 	// We'll open the file, creating it if necessary and ensuring that all
 	// writes are actually appends to the end of the file.
 	fileFlags := os.O_RDWR | os.O_APPEND | os.O_CREATE
@@ -114,12 +116,15 @@ func newHeaderStore(db walletdb.DB, filePath string,
 		return nil, err
 	}
 
+	fmt.Println("new header index")
 	// With the file open, we'll then create the header index so we can
 	// have random access into the flat files.
 	index, err := newHeaderIndex(db, hType)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("done header index")
 
 	return &headerStore{
 		fileName:    flatFileName,
@@ -152,6 +157,8 @@ func NewBlockHeaderStore(filePath string, db walletdb.DB,
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("stat header store")
 
 	// With the header store created, we'll fetch the file size to see if
 	// we need to initialize it with the first header or not.

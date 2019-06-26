@@ -706,6 +706,8 @@ func initNeutrinoBackend(chainDir string) (*neutrino.ChainService, func(), error
 			"database: %v", err)
 	}
 
+	fmt.Println("created walletdb")
+
 	headerStateAssertion, err := parseHeaderStateAssertion(
 		cfg.NeutrinoMode.AssertFilterHeader,
 	)
@@ -749,12 +751,14 @@ func initNeutrinoBackend(chainDir string) (*neutrino.ChainService, func(), error
 	neutrino.MaxPeers = 8
 	neutrino.BanDuration = time.Hour * 48
 
+	fmt.Println("chain servicing")
 	neutrinoCS, err := neutrino.NewChainService(config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to create neutrino light "+
 			"client: %v", err)
 	}
 
+	fmt.Println("starting neutrino chain serv")
 	if err := neutrinoCS.Start(); err != nil {
 		db.Close()
 		return nil, nil, err

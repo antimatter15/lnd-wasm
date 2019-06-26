@@ -124,6 +124,7 @@ func IsUnix(addr net.Addr) bool {
 func ParseAddressString(strAddress string, defaultPort string,
 	tcpResolver TCPResolver) (net.Addr, error) {
 
+	fmt.Println("parsing")
 	var parsedNetwork, parsedAddr string
 
 	// Addresses can either be in network://address:port format,
@@ -137,6 +138,8 @@ func ParseAddressString(strAddress string, defaultPort string,
 		parsedNetwork = parts[0]
 		parsedAddr = strings.Join(parts[1:], ":")
 	}
+
+	fmt.Println(parsedNetwork)
 
 	// Only TCP and Unix socket addresses are valid. We can't use IP or
 	// UDP only connections for anything we do in lnd.
@@ -178,7 +181,10 @@ func ParseAddressString(strAddress string, defaultPort string,
 		// resolver is unable to resolve local addresses, so we'll use
 		// the system resolver instead.
 		if rawHost == "" || IsLoopback(rawHost) {
-			return net.ResolveTCPAddr("tcp", addrWithPort)
+			// return net.ResolveTCPAddr("tcp", addrWithPort)
+			return &net.TCPAddr{
+				
+			}, nil
 		}
 
 		return tcpResolver("tcp", addrWithPort)
