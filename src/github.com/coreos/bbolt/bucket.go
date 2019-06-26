@@ -1,9 +1,9 @@
 package bbolt
 
 import (
-	"bytes"
-	"fmt"
-	"unsafe"
+	// "bytes"
+	// "fmt"
+	// "unsafe"
 )
 
 // const (
@@ -23,11 +23,11 @@ import (
 
 // DefaultFillPercent is the percentage that split pages are filled.
 // This value can be changed by setting Bucket.FillPercent.
-const DefaultFillPercent = 0.5
+// const DefaultFillPercent = 0.5
 
 // Bucket represents a collection of key/value pairs inside the database.
 type Bucket struct {
-	*bucket
+	// *bucket
 	// tx       *Tx                // the associated transaction
 	// buckets  map[string]*Bucket // subbucket cache
 	// page     *page              // inline page reference
@@ -39,65 +39,71 @@ type Bucket struct {
 	// amount if you know that your write workloads are mostly append-only.
 	//
 	// This is non-persisted across transactions so it must be set in every Tx.
-	FillPercent float64
+	// FillPercent float64
 }
 
 
 // Tx returns the tx of the bucket.
 func (b *Bucket) Tx() *Tx {
-	return b.tx
+	// return b.tx
+	return nil
 }
 
 // Root returns the root of the bucket.
-func (b *Bucket) Root() pgid {
-	return b.root
-}
+// func (b *Bucket) Root() pgid {
+// 	// return b.root
+// 	return nil
+// }
 
 // Writable returns whether the bucket is writable.
 func (b *Bucket) Writable() bool {
-	return b.tx.writable
+	// return b.tx.writable
+	// return nil
+	return false
 }
 
 // Cursor creates a cursor associated with the bucket.
 // The cursor is only valid as long as the transaction is open.
 // Do not use a cursor after the transaction is closed.
 func (b *Bucket) Cursor() *Cursor {
-	// Update transaction statistics.
-	b.tx.stats.CursorCount++
+	return nil
+	// // Update transaction statistics.
+	// b.tx.stats.CursorCount++
 
-	// Allocate and return a cursor.
-	return &Cursor{
-		bucket: b,
-		stack:  make([]elemRef, 0),
-	}
+	// // Allocate and return a cursor.
+	// return &Cursor{
+	// 	bucket: b,
+	// 	stack:  make([]elemRef, 0),
+	// }
 }
 
 // Bucket retrieves a nested bucket by name.
 // Returns nil if the bucket does not exist.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (b *Bucket) Bucket(name []byte) *Bucket {
-	if b.buckets != nil {
-		if child := b.buckets[string(name)]; child != nil {
-			return child
-		}
-	}
+	return nil
+	// if b.buckets != nil {
+	// 	if child := b.buckets[string(name)]; child != nil {
+	// 		return child
+	// 	}
+	// }
 
-	// Move cursor to key.
-	c := b.Cursor()
-	k, v, flags := c.seek(name)
+	// // Move cursor to key.
+	// c := b.Cursor()
+	// k, v, flags := c.seek(name)
 
-	// Return nil if the key doesn't exist or it is not a bucket.
-	if !bytes.Equal(name, k) || (flags&bucketLeafFlag) == 0 {
-		return nil
-	}
+	// // Return nil if the key doesn't exist or it is not a bucket.
+	// if !bytes.Equal(name, k) || (flags&bucketLeafFlag) == 0 {
+	// 	return nil
+	// }
 
-	// Otherwise create a bucket and cache it.
-	var child = b.openBucket(v)
-	if b.buckets != nil {
-		b.buckets[string(name)] = child
-	}
+	// // Otherwise create a bucket and cache it.
+	// var child = b.openBucket(v)
+	// if b.buckets != nil {
+	// 	b.buckets[string(name)] = child
+	// }
 
-	return child
+	// return child
 }
 
 // // Helper method that re-interprets a sub-bucket value
@@ -134,103 +140,105 @@ func (b *Bucket) Bucket(name []byte) *Bucket {
 // Returns an error if the key already exists, if the bucket name is blank, or if the bucket name is too long.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (b *Bucket) CreateBucket(key []byte) (*Bucket, error) {
-	if b.tx.db == nil {
-		return nil, ErrTxClosed
-	} else if !b.tx.writable {
-		return nil, ErrTxNotWritable
-	} else if len(key) == 0 {
-		return nil, ErrBucketNameRequired
-	}
+	// if b.tx.db == nil {
+	// 	return nil, ErrTxClosed
+	// } else if !b.tx.writable {
+	// 	return nil, ErrTxNotWritable
+	// } else if len(key) == 0 {
+	// 	return nil, ErrBucketNameRequired
+	// }
 
-	// Move cursor to correct position.
-	c := b.Cursor()
-	k, _, flags := c.seek(key)
+	// // Move cursor to correct position.
+	// c := b.Cursor()
+	// k, _, flags := c.seek(key)
 
-	// Return an error if there is an existing key.
-	if bytes.Equal(key, k) {
-		if (flags & bucketLeafFlag) != 0 {
-			return nil, ErrBucketExists
-		}
-		return nil, ErrIncompatibleValue
-	}
+	// // Return an error if there is an existing key.
+	// if bytes.Equal(key, k) {
+	// 	if (flags & bucketLeafFlag) != 0 {
+	// 		return nil, ErrBucketExists
+	// 	}
+	// 	return nil, ErrIncompatibleValue
+	// }
 
-	// Create empty, inline bucket.
-	var bucket = Bucket{
-		bucket:      &bucket{},
-		rootNode:    &node{isLeaf: true},
-		FillPercent: DefaultFillPercent,
-	}
-	var value = bucket.write()
+	// // Create empty, inline bucket.
+	// var bucket = Bucket{
+	// 	bucket:      &bucket{},
+	// 	rootNode:    &node{isLeaf: true},
+	// 	FillPercent: DefaultFillPercent,
+	// }
+	// var value = bucket.write()
 
-	// Insert into node.
-	key = cloneBytes(key)
-	c.node().put(key, key, value, 0, bucketLeafFlag)
+	// // Insert into node.
+	// key = cloneBytes(key)
+	// c.node().put(key, key, value, 0, bucketLeafFlag)
 
-	// Since subbuckets are not allowed on inline buckets, we need to
-	// dereference the inline page, if it exists. This will cause the bucket
-	// to be treated as a regular, non-inline bucket for the rest of the tx.
-	b.page = nil
+	// // Since subbuckets are not allowed on inline buckets, we need to
+	// // dereference the inline page, if it exists. This will cause the bucket
+	// // to be treated as a regular, non-inline bucket for the rest of the tx.
+	// b.page = nil
 
-	return b.Bucket(key), nil
+	// return b.Bucket(key), nil
+	return nil, nil
 }
 
 // CreateBucketIfNotExists creates a new bucket if it doesn't already exist and returns a reference to it.
 // Returns an error if the bucket name is blank, or if the bucket name is too long.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (b *Bucket) CreateBucketIfNotExists(key []byte) (*Bucket, error) {
-	child, err := b.CreateBucket(key)
-	if err == ErrBucketExists {
-		return b.Bucket(key), nil
-	} else if err != nil {
-		return nil, err
-	}
-	return child, nil
+	// child, err := b.CreateBucket(key)
+	// if err == ErrBucketExists {
+	// 	return b.Bucket(key), nil
+	// } else if err != nil {
+	// 	return nil, err
+	// }
+	// return child, nil
+	return nil, nil
 }
 
 // DeleteBucket deletes a bucket at the given key.
 // Returns an error if the bucket does not exists, or if the key represents a non-bucket value.
 func (b *Bucket) DeleteBucket(key []byte) error {
-	if b.tx.db == nil {
-		return ErrTxClosed
-	} else if !b.Writable() {
-		return ErrTxNotWritable
-	}
+	// if b.tx.db == nil {
+	// 	return ErrTxClosed
+	// } else if !b.Writable() {
+	// 	return ErrTxNotWritable
+	// }
 
-	// Move cursor to correct position.
-	c := b.Cursor()
-	k, _, flags := c.seek(key)
+	// // Move cursor to correct position.
+	// c := b.Cursor()
+	// k, _, flags := c.seek(key)
 
-	// Return an error if bucket doesn't exist or is not a bucket.
-	if !bytes.Equal(key, k) {
-		return ErrBucketNotFound
-	} else if (flags & bucketLeafFlag) == 0 {
-		return ErrIncompatibleValue
-	}
+	// // Return an error if bucket doesn't exist or is not a bucket.
+	// if !bytes.Equal(key, k) {
+	// 	return ErrBucketNotFound
+	// } else if (flags & bucketLeafFlag) == 0 {
+	// 	return ErrIncompatibleValue
+	// }
 
-	// Recursively delete all child buckets.
-	child := b.Bucket(key)
-	err := child.ForEach(func(k, v []byte) error {
-		if v == nil {
-			if err := child.DeleteBucket(k); err != nil {
-				return fmt.Errorf("delete bucket: %s", err)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
+	// // Recursively delete all child buckets.
+	// child := b.Bucket(key)
+	// err := child.ForEach(func(k, v []byte) error {
+	// 	if v == nil {
+	// 		if err := child.DeleteBucket(k); err != nil {
+	// 			return fmt.Errorf("delete bucket: %s", err)
+	// 		}
+	// 	}
+	// 	return nil
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
-	// Remove cached copy.
-	delete(b.buckets, string(key))
+	// // Remove cached copy.
+	// delete(b.buckets, string(key))
 
-	// Release all bucket pages to freelist.
-	child.nodes = nil
-	child.rootNode = nil
-	child.free()
+	// // Release all bucket pages to freelist.
+	// child.nodes = nil
+	// child.rootNode = nil
+	// child.free()
 
-	// Delete the node if we have a matching key.
-	c.node().del(key)
+	// // Delete the node if we have a matching key.
+	// c.node().del(key)
 
 	return nil
 }
@@ -239,18 +247,19 @@ func (b *Bucket) DeleteBucket(key []byte) error {
 // Returns a nil value if the key does not exist or if the key is a nested bucket.
 // The returned value is only valid for the life of the transaction.
 func (b *Bucket) Get(key []byte) []byte {
-	k, v, flags := b.Cursor().seek(key)
+	// k, v, flags := b.Cursor().seek(key)
 
-	// Return nil if this is a bucket.
-	if (flags & bucketLeafFlag) != 0 {
-		return nil
-	}
+	// // Return nil if this is a bucket.
+	// if (flags & bucketLeafFlag) != 0 {
+	// 	return nil
+	// }
 
-	// If our target node isn't the same key as what's passed in then return nil.
-	if !bytes.Equal(key, k) {
-		return nil
-	}
-	return v
+	// // If our target node isn't the same key as what's passed in then return nil.
+	// if !bytes.Equal(key, k) {
+	// 	return nil
+	// }
+	// return v
+	return nil
 }
 
 // Put sets the value for a key in the bucket.
@@ -258,30 +267,30 @@ func (b *Bucket) Get(key []byte) []byte {
 // Supplied value must remain valid for the life of the transaction.
 // Returns an error if the bucket was created from a read-only transaction, if the key is blank, if the key is too large, or if the value is too large.
 func (b *Bucket) Put(key []byte, value []byte) error {
-	if b.tx.db == nil {
-		return ErrTxClosed
-	} else if !b.Writable() {
-		return ErrTxNotWritable
-	} else if len(key) == 0 {
-		return ErrKeyRequired
-	} else if len(key) > MaxKeySize {
-		return ErrKeyTooLarge
-	} else if int64(len(value)) > MaxValueSize {
-		return ErrValueTooLarge
-	}
+	// if b.tx.db == nil {
+	// 	return ErrTxClosed
+	// } else if !b.Writable() {
+	// 	return ErrTxNotWritable
+	// } else if len(key) == 0 {
+	// 	return ErrKeyRequired
+	// } else if len(key) > MaxKeySize {
+	// 	return ErrKeyTooLarge
+	// } else if int64(len(value)) > MaxValueSize {
+	// 	return ErrValueTooLarge
+	// }
 
-	// Move cursor to correct position.
-	c := b.Cursor()
-	k, _, flags := c.seek(key)
+	// // Move cursor to correct position.
+	// c := b.Cursor()
+	// k, _, flags := c.seek(key)
 
-	// Return an error if there is an existing key with a bucket value.
-	if bytes.Equal(key, k) && (flags&bucketLeafFlag) != 0 {
-		return ErrIncompatibleValue
-	}
+	// // Return an error if there is an existing key with a bucket value.
+	// if bytes.Equal(key, k) && (flags&bucketLeafFlag) != 0 {
+	// 	return ErrIncompatibleValue
+	// }
 
-	// Insert into node.
-	key = cloneBytes(key)
-	c.node().put(key, key, value, 0, 0)
+	// // Insert into node.
+	// key = cloneBytes(key)
+	// c.node().put(key, key, value, 0, 0)
 
 	return nil
 }
@@ -290,71 +299,75 @@ func (b *Bucket) Put(key []byte, value []byte) error {
 // If the key does not exist then nothing is done and a nil error is returned.
 // Returns an error if the bucket was created from a read-only transaction.
 func (b *Bucket) Delete(key []byte) error {
-	if b.tx.db == nil {
-		return ErrTxClosed
-	} else if !b.Writable() {
-		return ErrTxNotWritable
-	}
+	// if b.tx.db == nil {
+	// 	return ErrTxClosed
+	// } else if !b.Writable() {
+	// 	return ErrTxNotWritable
+	// }
 
-	// Move cursor to correct position.
-	c := b.Cursor()
-	k, _, flags := c.seek(key)
+	// // Move cursor to correct position.
+	// c := b.Cursor()
+	// k, _, flags := c.seek(key)
 
-	// Return nil if the key doesn't exist.
-	if !bytes.Equal(key, k) {
-		return nil
-	}
+	// // Return nil if the key doesn't exist.
+	// if !bytes.Equal(key, k) {
+	// 	return nil
+	// }
 
-	// Return an error if there is already existing bucket value.
-	if (flags & bucketLeafFlag) != 0 {
-		return ErrIncompatibleValue
-	}
+	// // Return an error if there is already existing bucket value.
+	// if (flags & bucketLeafFlag) != 0 {
+	// 	return ErrIncompatibleValue
+	// }
 
-	// Delete the node if we have a matching key.
-	c.node().del(key)
+	// // Delete the node if we have a matching key.
+	// c.node().del(key)
 
 	return nil
 }
 
 // Sequence returns the current integer for the bucket without incrementing it.
-func (b *Bucket) Sequence() uint64 { return b.bucket.sequence }
+func (b *Bucket) Sequence() uint64 { 
+	// return b.bucket.sequence 
+	return 0
+}
 
 // SetSequence updates the sequence number for the bucket.
 func (b *Bucket) SetSequence(v uint64) error {
-	if b.tx.db == nil {
-		return ErrTxClosed
-	} else if !b.Writable() {
-		return ErrTxNotWritable
-	}
+	// if b.tx.db == nil {
+	// 	return ErrTxClosed
+	// } else if !b.Writable() {
+	// 	return ErrTxNotWritable
+	// }
 
-	// Materialize the root node if it hasn't been already so that the
-	// bucket will be saved during commit.
-	if b.rootNode == nil {
-		_ = b.node(b.root, nil)
-	}
+	// // Materialize the root node if it hasn't been already so that the
+	// // bucket will be saved during commit.
+	// if b.rootNode == nil {
+	// 	_ = b.node(b.root, nil)
+	// }
 
-	// Increment and return the sequence.
-	b.bucket.sequence = v
+	// // Increment and return the sequence.
+	// b.bucket.sequence = v
 	return nil
 }
 
 // NextSequence returns an autoincrementing integer for the bucket.
 func (b *Bucket) NextSequence() (uint64, error) {
-	if b.tx.db == nil {
-		return 0, ErrTxClosed
-	} else if !b.Writable() {
-		return 0, ErrTxNotWritable
-	}
+	// if b.tx.db == nil {
+	// 	return 0, ErrTxClosed
+	// } else if !b.Writable() {
+	// 	return 0, ErrTxNotWritable
+	// }
 
-	// Materialize the root node if it hasn't been already so that the
-	// bucket will be saved during commit.
-	if b.rootNode == nil {
-		_ = b.node(b.root, nil)
-	}
+	// // Materialize the root node if it hasn't been already so that the
+	// // bucket will be saved during commit.
+	// if b.rootNode == nil {
+	// 	_ = b.node(b.root, nil)
+	// }
 
-	// Increment and return the sequence.
-	b.bucket.sequence++
-	return b.bucket.sequence, nil
+	// // Increment and return the sequence.
+	// b.bucket.sequence++
+	// return b.bucket.sequence, nil
+	return 0, nil
 }
 
 // ForEach executes a function for each key/value pair in a bucket.
@@ -362,15 +375,15 @@ func (b *Bucket) NextSequence() (uint64, error) {
 // the error is returned to the caller. The provided function must not modify
 // the bucket; this will result in undefined behavior.
 func (b *Bucket) ForEach(fn func(k, v []byte) error) error {
-	if b.tx.db == nil {
-		return ErrTxClosed
-	}
-	c := b.Cursor()
-	for k, v := c.First(); k != nil; k, v = c.Next() {
-		if err := fn(k, v); err != nil {
-			return err
-		}
-	}
+	// if b.tx.db == nil {
+	// 	return ErrTxClosed
+	// }
+	// c := b.Cursor()
+	// for k, v := c.First(); k != nil; k, v = c.Next() {
+	// 	if err := fn(k, v); err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 

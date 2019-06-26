@@ -1,17 +1,17 @@
 package bbolt
 
 import (
-	"fmt"
-	"io"
-	"os"
-	"sort"
-	"strings"
-	"time"
-	"unsafe"
+	// "fmt"
+	// "io"
+	// "os"
+	// "sort"
+	// "strings"
+	// "time"
+	// "unsafe"
 )
 
 // txid represents the internal transaction identifier.
-type txid uint64
+// type txid uint64
 
 // Tx represents a read-only or read/write transaction on the database.
 // Read-only transactions can be used for retrieving values for keys and creating cursors.
@@ -22,22 +22,22 @@ type txid uint64
 // are using them. A long running read transaction can cause the database to
 // quickly grow.
 type Tx struct {
-	writable       bool
-	managed        bool
-	db             *DB
-	meta           *meta
-	root           Bucket
-	pages          map[pgid]*page
-	stats          TxStats
-	commitHandlers []func()
+	// writable       bool
+	// managed        bool
+	// db             *DB
+	// meta           *meta
+	// root           Bucket
+	// pages          map[pgid]*page
+	// stats          TxStats
+	// commitHandlers []func()
 
-	// WriteFlag specifies the flag for write-related methods like WriteTo().
-	// Tx opens the database file with the specified flag to copy the data.
-	//
-	// By default, the flag is unset, which works well for mostly in-memory
-	// workloads. For databases that are much larger than available RAM,
-	// set the flag to syscall.O_DIRECT to avoid trashing the page cache.
-	WriteFlag int
+	// // WriteFlag specifies the flag for write-related methods like WriteTo().
+	// // Tx opens the database file with the specified flag to copy the data.
+	// //
+	// // By default, the flag is unset, which works well for mostly in-memory
+	// // workloads. For databases that are much larger than available RAM,
+	// // set the flag to syscall.O_DIRECT to avoid trashing the page cache.
+	// WriteFlag int
 }
 
 // // init initializes the transaction.
@@ -61,24 +61,26 @@ type Tx struct {
 // 	}
 // }
 
-// ID returns the transaction id.
-func (tx *Tx) ID() int {
-	return int(tx.meta.txid)
-}
+// // ID returns the transaction id.
+// func (tx *Tx) ID() int {
+// 	return int(tx.meta.txid)
+// }
 
-// DB returns a reference to the database that created the transaction.
-func (tx *Tx) DB() *DB {
-	return tx.db
-}
+// // DB returns a reference to the database that created the transaction.
+// func (tx *Tx) DB() *DB {
+// 	// return tx.db
+// 	return nil
+// }
 
 // Size returns current database size in bytes as seen by this transaction.
-func (tx *Tx) Size() int64 {
-	return int64(tx.meta.pgid) * int64(tx.db.pageSize)
-}
+// func (tx *Tx) Size() int64 {
+// 	return int64(tx.meta.pgid) * int64(tx.db.pageSize)
+// }
 
 // Writable returns whether the transaction can perform write operations.
 func (tx *Tx) Writable() bool {
-	return tx.writable
+	// return tx.writable
+	return false
 }
 
 // Cursor creates a cursor associated with the root bucket.
@@ -86,138 +88,144 @@ func (tx *Tx) Writable() bool {
 // The cursor is only valid as long as the transaction is open.
 // Do not use a cursor after the transaction is closed.
 func (tx *Tx) Cursor() *Cursor {
-	return tx.root.Cursor()
+	// return tx.root.Cursor()
+	return nil
 }
 
 // Stats retrieves a copy of the current transaction statistics.
-func (tx *Tx) Stats() TxStats {
-	return tx.stats
-}
+// func (tx *Tx) Stats() TxStats {
+// 	return tx.stats
+// }
 
 // Bucket retrieves a bucket by name.
 // Returns nil if the bucket does not exist.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (tx *Tx) Bucket(name []byte) *Bucket {
-	return tx.root.Bucket(name)
+	// return tx.root.Bucket(name)
+	return nil
 }
 
 // CreateBucket creates a new bucket.
 // Returns an error if the bucket already exists, if the bucket name is blank, or if the bucket name is too long.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (tx *Tx) CreateBucket(name []byte) (*Bucket, error) {
-	return tx.root.CreateBucket(name)
+	// return tx.root.CreateBucket(name)
+	return nil, nil
 }
 
 // CreateBucketIfNotExists creates a new bucket if it doesn't already exist.
 // Returns an error if the bucket name is blank, or if the bucket name is too long.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (tx *Tx) CreateBucketIfNotExists(name []byte) (*Bucket, error) {
-	return tx.root.CreateBucketIfNotExists(name)
+	// return tx.root.CreateBucketIfNotExists(name)
+	return nil, nil
 }
 
 // DeleteBucket deletes a bucket.
 // Returns an error if the bucket cannot be found or if the key represents a non-bucket value.
 func (tx *Tx) DeleteBucket(name []byte) error {
-	return tx.root.DeleteBucket(name)
+	// return tx.root.DeleteBucket(name)
+	return nil
 }
 
 // ForEach executes a function for each bucket in the root.
 // If the provided function returns an error then the iteration is stopped and
 // the error is returned to the caller.
 func (tx *Tx) ForEach(fn func(name []byte, b *Bucket) error) error {
-	return tx.root.ForEach(func(k, v []byte) error {
-		return fn(k, tx.root.Bucket(k))
-	})
+	// return tx.root.ForEach(func(k, v []byte) error {
+	// 	return fn(k, tx.root.Bucket(k))
+	// })
+	return nil
 }
 
 // OnCommit adds a handler function to be executed after the transaction successfully commits.
 func (tx *Tx) OnCommit(fn func()) {
-	tx.commitHandlers = append(tx.commitHandlers, fn)
+	// tx.commitHandlers = append(tx.commitHandlers, fn)
 }
 
 // Commit writes all changes to disk and updates the meta page.
 // Returns an error if a disk write error occurs, or if Commit is
 // called on a read-only transaction.
 func (tx *Tx) Commit() error {
-	_assert(!tx.managed, "managed tx commit not allowed")
-	if tx.db == nil {
-		return ErrTxClosed
-	} else if !tx.writable {
-		return ErrTxNotWritable
-	}
+	// _assert(!tx.managed, "managed tx commit not allowed")
+	// if tx.db == nil {
+	// 	return ErrTxClosed
+	// } else if !tx.writable {
+	// 	return ErrTxNotWritable
+	// }
 
-	// TODO(benbjohnson): Use vectorized I/O to write out dirty pages.
+	// // TODO(benbjohnson): Use vectorized I/O to write out dirty pages.
 
-	// Rebalance nodes which have had deletions.
-	var startTime = time.Now()
-	tx.root.rebalance()
-	if tx.stats.Rebalance > 0 {
-		tx.stats.RebalanceTime += time.Since(startTime)
-	}
+	// // Rebalance nodes which have had deletions.
+	// var startTime = time.Now()
+	// tx.root.rebalance()
+	// if tx.stats.Rebalance > 0 {
+	// 	tx.stats.RebalanceTime += time.Since(startTime)
+	// }
 
-	// spill data onto dirty pages.
-	startTime = time.Now()
-	if err := tx.root.spill(); err != nil {
-		tx.rollback()
-		return err
-	}
-	tx.stats.SpillTime += time.Since(startTime)
+	// // spill data onto dirty pages.
+	// startTime = time.Now()
+	// if err := tx.root.spill(); err != nil {
+	// 	tx.rollback()
+	// 	return err
+	// }
+	// tx.stats.SpillTime += time.Since(startTime)
 
-	// Free the old root bucket.
-	tx.meta.root.root = tx.root.root
+	// // Free the old root bucket.
+	// tx.meta.root.root = tx.root.root
 
-	// Free the old freelist because commit writes out a fresh freelist.
-	if tx.meta.freelist != pgidNoFreelist {
-		tx.db.freelist.free(tx.meta.txid, tx.db.page(tx.meta.freelist))
-	}
+	// // Free the old freelist because commit writes out a fresh freelist.
+	// if tx.meta.freelist != pgidNoFreelist {
+	// 	tx.db.freelist.free(tx.meta.txid, tx.db.page(tx.meta.freelist))
+	// }
 
-	if !tx.db.NoFreelistSync {
-		err := tx.commitFreelist()
-		if err != nil {
-			return err
-		}
-	} else {
-		tx.meta.freelist = pgidNoFreelist
-	}
+	// if !tx.db.NoFreelistSync {
+	// 	err := tx.commitFreelist()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// } else {
+	// 	tx.meta.freelist = pgidNoFreelist
+	// }
 
-	// Write dirty pages to disk.
-	startTime = time.Now()
-	if err := tx.write(); err != nil {
-		tx.rollback()
-		return err
-	}
+	// // Write dirty pages to disk.
+	// startTime = time.Now()
+	// if err := tx.write(); err != nil {
+	// 	tx.rollback()
+	// 	return err
+	// }
 
-	// If strict mode is enabled then perform a consistency check.
-	// Only the first consistency error is reported in the panic.
-	if tx.db.StrictMode {
-		ch := tx.Check()
-		var errs []string
-		for {
-			err, ok := <-ch
-			if !ok {
-				break
-			}
-			errs = append(errs, err.Error())
-		}
-		if len(errs) > 0 {
-			panic("check fail: " + strings.Join(errs, "\n"))
-		}
-	}
+	// // If strict mode is enabled then perform a consistency check.
+	// // Only the first consistency error is reported in the panic.
+	// if tx.db.StrictMode {
+	// 	ch := tx.Check()
+	// 	var errs []string
+	// 	for {
+	// 		err, ok := <-ch
+	// 		if !ok {
+	// 			break
+	// 		}
+	// 		errs = append(errs, err.Error())
+	// 	}
+	// 	if len(errs) > 0 {
+	// 		panic("check fail: " + strings.Join(errs, "\n"))
+	// 	}
+	// }
 
-	// Write meta to disk.
-	if err := tx.writeMeta(); err != nil {
-		tx.rollback()
-		return err
-	}
-	tx.stats.WriteTime += time.Since(startTime)
+	// // Write meta to disk.
+	// if err := tx.writeMeta(); err != nil {
+	// 	tx.rollback()
+	// 	return err
+	// }
+	// tx.stats.WriteTime += time.Since(startTime)
 
-	// Finalize the transaction.
-	tx.close()
+	// // Finalize the transaction.
+	// tx.close()
 
-	// Execute commit handlers now that the locks have been removed.
-	for _, fn := range tx.commitHandlers {
-		fn()
-	}
+	// // Execute commit handlers now that the locks have been removed.
+	// for _, fn := range tx.commitHandlers {
+	// 	fn()
+	// }
 
 	return nil
 }
@@ -250,11 +258,11 @@ func (tx *Tx) Commit() error {
 // Rollback closes the transaction and ignores all previous updates. Read-only
 // transactions must be rolled back and not committed.
 func (tx *Tx) Rollback() error {
-	_assert(!tx.managed, "managed tx rollback not allowed")
-	if tx.db == nil {
-		return ErrTxClosed
-	}
-	tx.nonPhysicalRollback()
+	// _assert(!tx.managed, "managed tx rollback not allowed")
+	// if tx.db == nil {
+	// 	return ErrTxClosed
+	// }
+	// tx.nonPhysicalRollback()
 	return nil
 }
 
@@ -325,64 +333,64 @@ func (tx *Tx) Rollback() error {
 // This function exists for backwards compatibility.
 //
 // Deprecated; Use WriteTo() instead.
-func (tx *Tx) Copy(w io.Writer) error {
-	_, err := tx.WriteTo(w)
-	return err
-}
+// func (tx *Tx) Copy(w io.Writer) error {
+// 	_, err := tx.WriteTo(w)
+// 	return err
+// }
 
-// WriteTo writes the entire database to a writer.
-// If err == nil then exactly tx.Size() bytes will be written into the writer.
-func (tx *Tx) WriteTo(w io.Writer) (n int64, err error) {
-	// Attempt to open reader with WriteFlag
-	f, err := tx.db.openFile(tx.db.path, os.O_RDONLY|tx.WriteFlag, 0)
-	if err != nil {
-		return 0, err
-	}
-	defer func() {
-		if cerr := f.Close(); err == nil {
-			err = cerr
-		}
-	}()
+// // WriteTo writes the entire database to a writer.
+// // If err == nil then exactly tx.Size() bytes will be written into the writer.
+// func (tx *Tx) WriteTo(w io.Writer) (n int64, err error) {
+// 	// Attempt to open reader with WriteFlag
+// 	f, err := tx.db.openFile(tx.db.path, os.O_RDONLY|tx.WriteFlag, 0)
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	defer func() {
+// 		if cerr := f.Close(); err == nil {
+// 			err = cerr
+// 		}
+// 	}()
 
-	// Generate a meta page. We use the same page data for both meta pages.
-	buf := make([]byte, tx.db.pageSize)
-	page := (*page)(unsafe.Pointer(&buf[0]))
-	page.flags = metaPageFlag
-	*page.meta() = *tx.meta
+// 	// Generate a meta page. We use the same page data for both meta pages.
+// 	buf := make([]byte, tx.db.pageSize)
+// 	page := (*page)(unsafe.Pointer(&buf[0]))
+// 	page.flags = metaPageFlag
+// 	*page.meta() = *tx.meta
 
-	// Write meta 0.
-	page.id = 0
-	page.meta().checksum = page.meta().sum64()
-	nn, err := w.Write(buf)
-	n += int64(nn)
-	if err != nil {
-		return n, fmt.Errorf("meta 0 copy: %s", err)
-	}
+// 	// Write meta 0.
+// 	page.id = 0
+// 	page.meta().checksum = page.meta().sum64()
+// 	nn, err := w.Write(buf)
+// 	n += int64(nn)
+// 	if err != nil {
+// 		return n, fmt.Errorf("meta 0 copy: %s", err)
+// 	}
 
-	// Write meta 1 with a lower transaction id.
-	page.id = 1
-	page.meta().txid -= 1
-	page.meta().checksum = page.meta().sum64()
-	nn, err = w.Write(buf)
-	n += int64(nn)
-	if err != nil {
-		return n, fmt.Errorf("meta 1 copy: %s", err)
-	}
+// 	// Write meta 1 with a lower transaction id.
+// 	page.id = 1
+// 	page.meta().txid -= 1
+// 	page.meta().checksum = page.meta().sum64()
+// 	nn, err = w.Write(buf)
+// 	n += int64(nn)
+// 	if err != nil {
+// 		return n, fmt.Errorf("meta 1 copy: %s", err)
+// 	}
 
-	// Move past the meta pages in the file.
-	if _, err := f.Seek(int64(tx.db.pageSize*2), io.SeekStart); err != nil {
-		return n, fmt.Errorf("seek: %s", err)
-	}
+// 	// Move past the meta pages in the file.
+// 	if _, err := f.Seek(int64(tx.db.pageSize*2), io.SeekStart); err != nil {
+// 		return n, fmt.Errorf("seek: %s", err)
+// 	}
 
-	// Copy data pages.
-	wn, err := io.CopyN(w, f, tx.Size()-int64(tx.db.pageSize*2))
-	n += wn
-	if err != nil {
-		return n, err
-	}
+// 	// Copy data pages.
+// 	wn, err := io.CopyN(w, f, tx.Size()-int64(tx.db.pageSize*2))
+// 	n += wn
+// 	if err != nil {
+// 		return n, err
+// 	}
 
-	return n, nil
-}
+// 	return n, nil
+// }
 
 // // CopyFile copies the entire database to file at the given path.
 // // A reader transaction is maintained during the copy so it is safe to continue

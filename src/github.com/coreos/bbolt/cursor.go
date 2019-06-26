@@ -1,9 +1,9 @@
 package bbolt
 
 import (
-	"bytes"
-	"fmt"
-	"sort"
+	// "bytes"
+	// "fmt"
+	// "sort"
 )
 
 // Cursor represents an iterator that can traverse over all key/value pairs in a bucket in sorted order.
@@ -16,36 +16,38 @@ import (
 // and return unexpected keys and/or values. You must reposition your cursor
 // after mutating data.
 type Cursor struct {
-	bucket *Bucket
-	stack  []elemRef
+	// bucket *Bucket
+	// stack  []elemRef
 }
 
 // Bucket returns the bucket that this cursor was created from.
 func (c *Cursor) Bucket() *Bucket {
-	return c.bucket
+	// return c.bucket
+	return nil
 }
 
 // First moves the cursor to the first item in the bucket and returns its key and value.
 // If the bucket is empty then a nil key and value are returned.
 // The returned key and value are only valid for the life of the transaction.
 func (c *Cursor) First() (key []byte, value []byte) {
-	_assert(c.bucket.tx.db != nil, "tx closed")
-	c.stack = c.stack[:0]
-	p, n := c.bucket.pageNode(c.bucket.root)
-	c.stack = append(c.stack, elemRef{page: p, node: n, index: 0})
-	c.first()
+	// _assert(c.bucket.tx.db != nil, "tx closed")
+	// c.stack = c.stack[:0]
+	// p, n := c.bucket.pageNode(c.bucket.root)
+	// c.stack = append(c.stack, elemRef{page: p, node: n, index: 0})
+	// c.first()
 
-	// If we land on an empty page then move to the next value.
-	// https://github.com/boltdb/bolt/issues/450
-	if c.stack[len(c.stack)-1].count() == 0 {
-		c.next()
-	}
+	// // If we land on an empty page then move to the next value.
+	// // https://github.com/boltdb/bolt/issues/450
+	// if c.stack[len(c.stack)-1].count() == 0 {
+	// 	c.next()
+	// }
 
-	k, v, flags := c.keyValue()
-	if (flags & uint32(bucketLeafFlag)) != 0 {
-		return k, nil
-	}
-	return k, v
+	// k, v, flags := c.keyValue()
+	// if (flags & uint32(bucketLeafFlag)) != 0 {
+	// 	return k, nil
+	// }
+	// return k, v
+	return nil, nil
 
 }
 
@@ -53,61 +55,64 @@ func (c *Cursor) First() (key []byte, value []byte) {
 // If the bucket is empty then a nil key and value are returned.
 // The returned key and value are only valid for the life of the transaction.
 func (c *Cursor) Last() (key []byte, value []byte) {
-	_assert(c.bucket.tx.db != nil, "tx closed")
-	c.stack = c.stack[:0]
-	p, n := c.bucket.pageNode(c.bucket.root)
-	ref := elemRef{page: p, node: n}
-	ref.index = ref.count() - 1
-	c.stack = append(c.stack, ref)
-	c.last()
-	k, v, flags := c.keyValue()
-	if (flags & uint32(bucketLeafFlag)) != 0 {
-		return k, nil
-	}
-	return k, v
+	// _assert(c.bucket.tx.db != nil, "tx closed")
+	// c.stack = c.stack[:0]
+	// p, n := c.bucket.pageNode(c.bucket.root)
+	// ref := elemRef{page: p, node: n}
+	// ref.index = ref.count() - 1
+	// c.stack = append(c.stack, ref)
+	// c.last()
+	// k, v, flags := c.keyValue()
+	// if (flags & uint32(bucketLeafFlag)) != 0 {
+	// 	return k, nil
+	// }
+	// return k, v
+	return nil, nil
 }
 
 // Next moves the cursor to the next item in the bucket and returns its key and value.
 // If the cursor is at the end of the bucket then a nil key and value are returned.
 // The returned key and value are only valid for the life of the transaction.
 func (c *Cursor) Next() (key []byte, value []byte) {
-	_assert(c.bucket.tx.db != nil, "tx closed")
-	k, v, flags := c.next()
-	if (flags & uint32(bucketLeafFlag)) != 0 {
-		return k, nil
-	}
-	return k, v
+	// _assert(c.bucket.tx.db != nil, "tx closed")
+	// k, v, flags := c.next()
+	// if (flags & uint32(bucketLeafFlag)) != 0 {
+	// 	return k, nil
+	// }
+	// return k, v
+	return nil, nil
 }
 
 // Prev moves the cursor to the previous item in the bucket and returns its key and value.
 // If the cursor is at the beginning of the bucket then a nil key and value are returned.
 // The returned key and value are only valid for the life of the transaction.
 func (c *Cursor) Prev() (key []byte, value []byte) {
-	_assert(c.bucket.tx.db != nil, "tx closed")
+	// _assert(c.bucket.tx.db != nil, "tx closed")
 
-	// Attempt to move back one element until we're successful.
-	// Move up the stack as we hit the beginning of each page in our stack.
-	for i := len(c.stack) - 1; i >= 0; i-- {
-		elem := &c.stack[i]
-		if elem.index > 0 {
-			elem.index--
-			break
-		}
-		c.stack = c.stack[:i]
-	}
+	// // Attempt to move back one element until we're successful.
+	// // Move up the stack as we hit the beginning of each page in our stack.
+	// for i := len(c.stack) - 1; i >= 0; i-- {
+	// 	elem := &c.stack[i]
+	// 	if elem.index > 0 {
+	// 		elem.index--
+	// 		break
+	// 	}
+	// 	c.stack = c.stack[:i]
+	// }
 
-	// If we've hit the end then return nil.
-	if len(c.stack) == 0 {
-		return nil, nil
-	}
+	// // If we've hit the end then return nil.
+	// if len(c.stack) == 0 {
+	// 	return nil, nil
+	// }
 
-	// Move down the stack to find the last element of the last leaf under this branch.
-	c.last()
-	k, v, flags := c.keyValue()
-	if (flags & uint32(bucketLeafFlag)) != 0 {
-		return k, nil
-	}
-	return k, v
+	// // Move down the stack to find the last element of the last leaf under this branch.
+	// c.last()
+	// k, v, flags := c.keyValue()
+	// if (flags & uint32(bucketLeafFlag)) != 0 {
+	// 	return k, nil
+	// }
+	// return k, v
+	return nil, nil
 }
 
 // Seek moves the cursor to a given key and returns it.
@@ -115,36 +120,37 @@ func (c *Cursor) Prev() (key []byte, value []byte) {
 // follow, a nil key is returned.
 // The returned key and value are only valid for the life of the transaction.
 func (c *Cursor) Seek(seek []byte) (key []byte, value []byte) {
-	k, v, flags := c.seek(seek)
+	// k, v, flags := c.seek(seek)
 
-	// If we ended up after the last element of a page then move to the next one.
-	if ref := &c.stack[len(c.stack)-1]; ref.index >= ref.count() {
-		k, v, flags = c.next()
-	}
+	// // If we ended up after the last element of a page then move to the next one.
+	// if ref := &c.stack[len(c.stack)-1]; ref.index >= ref.count() {
+	// 	k, v, flags = c.next()
+	// }
 
-	if k == nil {
-		return nil, nil
-	} else if (flags & uint32(bucketLeafFlag)) != 0 {
-		return k, nil
-	}
-	return k, v
+	// if k == nil {
+	// 	return nil, nil
+	// } else if (flags & uint32(bucketLeafFlag)) != 0 {
+	// 	return k, nil
+	// }
+	// return k, v
+	return nil, nil
 }
 
 // Delete removes the current key/value under the cursor from the bucket.
 // Delete fails if current key/value is a bucket or if the transaction is not writable.
 func (c *Cursor) Delete() error {
-	if c.bucket.tx.db == nil {
-		return ErrTxClosed
-	} else if !c.bucket.Writable() {
-		return ErrTxNotWritable
-	}
+	// if c.bucket.tx.db == nil {
+	// 	return ErrTxClosed
+	// } else if !c.bucket.Writable() {
+	// 	return ErrTxNotWritable
+	// }
 
-	key, _, flags := c.keyValue()
-	// Return an error if current value is a bucket.
-	if (flags & bucketLeafFlag) != 0 {
-		return ErrIncompatibleValue
-	}
-	c.node().del(key)
+	// key, _, flags := c.keyValue()
+	// // Return an error if current value is a bucket.
+	// if (flags & bucketLeafFlag) != 0 {
+	// 	return ErrIncompatibleValue
+	// }
+	// c.node().del(key)
 
 	return nil
 }

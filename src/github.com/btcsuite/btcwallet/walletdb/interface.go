@@ -7,7 +7,7 @@
 
 package walletdb
 
-import "io"
+// import "io"
 
 // ReadTx represents a database transaction that can only be used for reads.  If
 // a database update must occur, use a ReadWriteTx.
@@ -185,7 +185,7 @@ type DB interface {
 
 	// Copy writes a copy of the database to the provided writer.  This
 	// call will start a read-only transaction to perform all operations.
-	Copy(w io.Writer) error
+	// Copy(w io.Writer) error
 
 	// Close cleanly shuts down the database and syncs all data.
 	Close() error

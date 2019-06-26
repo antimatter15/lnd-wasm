@@ -5,7 +5,7 @@
 package bdb
 
 import (
-	"io"
+	// "io"
 	"os"
 
 	"github.com/btcsuite/btcwallet/walletdb"
@@ -314,11 +314,11 @@ func (db *db) BeginReadWriteTx() (walletdb.ReadWriteTx, error) {
 // start a read-only transaction to perform all operations.
 //
 // This function is part of the walletdb.Db interface implementation.
-func (db *db) Copy(w io.Writer) error {
-	return convertErr((*bbolt.DB)(db).View(func(tx *bbolt.Tx) error {
-		return tx.Copy(w)
-	}))
-}
+// func (db *db) Copy(w io.Writer) error {
+// 	return convertErr((*bbolt.DB)(db).View(func(tx *bbolt.Tx) error {
+// 		return tx.Copy(w)
+// 	}))
+// }
 
 // Close cleanly shuts down the database and syncs all data.
 //
