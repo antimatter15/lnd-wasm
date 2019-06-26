@@ -1,3 +1,3 @@
 #!/bin/bash
 
-find src -depth -name '*.git' -execdir bash -c 'mv "$0" "${0//.git/.git2}"' {} \;
+find src -depth -name '*/.git' -execdir bash -c 'mv "$0" "${0//.git/.git2}"' {} \;
