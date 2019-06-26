@@ -10,3 +10,22 @@ Then arbitrary changes can be made to arbitrary dependencies with impunity.
 
 Rebasing and upgrading is left as an exercise to the reader. I have no idea how to do it. 
 
+## Getting Started
+
+First, check out this repository. 
+
+Go to `bridge` and run `yarn`
+
+Go to `jsdeps` and run `yarn && yarn build`
+
+Now, back in the root directory, run:
+
+```
+python3 -m http.server --directory public/
+```
+
+Leave that running in the background.
+
+```
+env GOOS=js GOARCH=wasm go build -o public/main.wasm leyden.app/wire
+```
