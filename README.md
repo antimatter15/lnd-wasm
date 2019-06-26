@@ -29,5 +29,9 @@ http-server public/
 Leave that running in the background.
 
 ```
-env GOOS=js GOARCH=wasm go build -o public/main.wasm leyden.app/wire
+env GOOS=js GOARCH=wasm go build -o public/wire.wasm leyden.app/wire
+```
+
+```
+env GOOS=js GOARCH=wasm go test -v  -exec=(go env GOROOT)"/misc/wasm/go_js_wasm_exec" github.com/coreos/bbolt
 ```
