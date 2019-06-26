@@ -1,0 +1,12 @@
+echo "Building..."
+if GOOS=js GOARCH=wasm go build -o public/biggo.wasm leyden.app/biggo ; then
+    echo "Reloading..."
+    ./reload-browser "Google Chrome"
+else
+    osascript -e 'display notification "Error compiling!"'
+    echo "Error..."
+fi
+
+
+
+
