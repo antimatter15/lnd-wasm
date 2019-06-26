@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcwallet/internal/prompt"
+	// "github.com/btcsuite/btcwallet/internal/prompt"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	"github.com/btcsuite/btcwallet/walletdb"
 )
@@ -176,10 +176,11 @@ func (l *Loader) OpenExistingWallet(pubPassphrase []byte, canConsolePrompt bool)
 
 	var cbs *waddrmgr.OpenCallbacks
 	if canConsolePrompt {
-		cbs = &waddrmgr.OpenCallbacks{
-			ObtainSeed:        prompt.ProvideSeed,
-			ObtainPrivatePass: prompt.ProvidePrivPassphrase,
-		}
+		// cbs = &waddrmgr.OpenCallbacks{
+		// 	ObtainSeed:        prompt.ProvideSeed,
+		// 	ObtainPrivatePass: prompt.ProvidePrivPassphrase,
+		// }
+		return nil, errors.New("Unable to trigger console prompt in Web Assembly")
 	} else {
 		cbs = &waddrmgr.OpenCallbacks{
 			ObtainSeed:        noConsole,
