@@ -1,9 +1,10 @@
 package tor
 
 import (
-	"errors"
+	// "errors"
 	"net"
 	"fmt"
+	"syscall/js"
 )
 
 // TODO: this interface and its implementations should ideally be moved
@@ -34,13 +35,33 @@ type ClearNet struct{}
 
 // Dial on the regular network uses net.Dial
 func (r *ClearNet) Dial(network, address string) (net.Conn, error) {
+	fmt.Println("attempting to dial...", address)
 	return net.Dial(network, address)
 }
 
 // LookupHost for regular network uses the net.LookupHost function
 func (r *ClearNet) LookupHost(host string) ([]string, error) {
 	fmt.Println("Resolving names", host)
-	return net.LookupHost(host)
+	// return net.LookupHost(host)
+
+    done := make(chan []string)
+
+    callback := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+        if args[0].Length() == 0 {
+        	done <- []string{}
+        } else {
+        	done <- []string{args[0].Index(0).String()}
+        }
+        
+        return nil
+    })
+
+    defer callback.Release()
+    js.Global().Get("resolveHost").Invoke(host, callback)
+
+    return <-done, nil
+
+
 }
 
 // LookupSRV for regular network uses net.LookupSRV function
@@ -55,54 +76,54 @@ func (r *ClearNet) ResolveTCPAddr(network, address string) (*net.TCPAddr, error)
 	return nil, nil
 }
 
-// ProxyNet is an implementation of the Net interface that defines behaviour
-// for Tor network connections.
-type ProxyNet struct {
-	// SOCKS is the host:port which Tor's exposed SOCKS5 proxy is listening
-	// on.
-	SOCKS string
+// // ProxyNet is an implementation of the Net interface that defines behaviour
+// // for Tor network connections.
+// type ProxyNet struct {
+// 	// SOCKS is the host:port which Tor's exposed SOCKS5 proxy is listening
+// 	// on.
+// 	SOCKS string
 
-	// DNS is the host:port of the DNS server for Tor to use for SRV
-	// queries.
-	DNS string
+// 	// DNS is the host:port of the DNS server for Tor to use for SRV
+// 	// queries.
+// 	DNS string
 
-	// StreamIsolation is a bool that determines if we should force the
-	// creation of a new circuit for this connection. If true, then this
-	// means that our traffic may be harder to correlate as each connection
-	// will now use a distinct circuit.
-	StreamIsolation bool
-}
+// 	// StreamIsolation is a bool that determines if we should force the
+// 	// creation of a new circuit for this connection. If true, then this
+// 	// means that our traffic may be harder to correlate as each connection
+// 	// will now use a distinct circuit.
+// 	StreamIsolation bool
+// }
 
-// Dial uses the Tor Dial function in order to establish connections through
-// Tor. Since Tor only supports TCP connections, only TCP networks are allowed.
-func (p *ProxyNet) Dial(network, address string) (net.Conn, error) {
-	switch network {
-	case "tcp", "tcp4", "tcp6":
-	default:
-		return nil, errors.New("cannot dial non-tcp network via Tor")
-	}
-	return Dial(address, p.SOCKS, p.StreamIsolation)
-}
+// // Dial uses the Tor Dial function in order to establish connections through
+// // Tor. Since Tor only supports TCP connections, only TCP networks are allowed.
+// func (p *ProxyNet) Dial(network, address string) (net.Conn, error) {
+// 	switch network {
+// 	case "tcp", "tcp4", "tcp6":
+// 	default:
+// 		return nil, errors.New("cannot dial non-tcp network via Tor")
+// 	}
+// 	return Dial(address, p.SOCKS, p.StreamIsolation)
+// }
 
-// LookupHost uses the Tor LookupHost function in order to resolve hosts over
-// Tor.
-func (p *ProxyNet) LookupHost(host string) ([]string, error) {
-	return LookupHost(host, p.SOCKS)
-}
+// // LookupHost uses the Tor LookupHost function in order to resolve hosts over
+// // Tor.
+// func (p *ProxyNet) LookupHost(host string) ([]string, error) {
+// 	return LookupHost(host, p.SOCKS)
+// }
 
-// LookupSRV uses the Tor LookupSRV function in order to resolve SRV DNS queries
-// over Tor.
-func (p *ProxyNet) LookupSRV(service, proto, name string) (string, []*net.SRV, error) {
-	return LookupSRV(service, proto, name, p.SOCKS, p.DNS, p.StreamIsolation)
-}
+// // LookupSRV uses the Tor LookupSRV function in order to resolve SRV DNS queries
+// // over Tor.
+// func (p *ProxyNet) LookupSRV(service, proto, name string) (string, []*net.SRV, error) {
+// 	return LookupSRV(service, proto, name, p.SOCKS, p.DNS, p.StreamIsolation)
+// }
 
-// ResolveTCPAddr uses the Tor ResolveTCPAddr function in order to resolve TCP
-// addresses over Tor.
-func (p *ProxyNet) ResolveTCPAddr(network, address string) (*net.TCPAddr, error) {
-	switch network {
-	case "tcp", "tcp4", "tcp6":
-	default:
-		return nil, errors.New("cannot dial non-tcp network via Tor")
-	}
-	return ResolveTCPAddr(address, p.SOCKS)
-}
+// // ResolveTCPAddr uses the Tor ResolveTCPAddr function in order to resolve TCP
+// // addresses over Tor.
+// func (p *ProxyNet) ResolveTCPAddr(network, address string) (*net.TCPAddr, error) {
+// 	switch network {
+// 	case "tcp", "tcp4", "tcp6":
+// 	default:
+// 		return nil, errors.New("cannot dial non-tcp network via Tor")
+// 	}
+// 	return ResolveTCPAddr(address, p.SOCKS)
+// }

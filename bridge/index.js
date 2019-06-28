@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
 const net = require('net');
+const dns = require('dns');
 
 
 const wss = new WebSocket.Server({
@@ -14,7 +15,18 @@ wss.on('connection', async (ws) => {
     console.log(message)
     let payload = JSON.parse(message);
 
-    if(payload.action === 'dial'){
+    if(payload.action === 'resolve'){
+      dns.lookup(payload.host, {
+        all: true 
+      }, (err, addrs) => {
+        console.log(err, addrs);
+        ws.send(JSON.stringify({
+          action: 'resolve_finish',
+          id: payload.id,
+          addresses: addrs
+        }))
+      })
+    }else if(payload.action === 'dial'){
       let client = new net.Socket();
       let id = sockets.length;
       sockets.push(client)

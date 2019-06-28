@@ -646,13 +646,13 @@ func loadConfig() (*config, error) {
 	// default. If we should be proxying all traffic through Tor, then
 	// we'll use the Tor proxy specific functions in order to avoid leaking
 	// our real information.
-	if cfg.Tor.Active {
-		cfg.net = &tor.ProxyNet{
-			SOCKS:           cfg.Tor.SOCKS,
-			DNS:             cfg.Tor.DNS,
-			StreamIsolation: cfg.Tor.StreamIsolation,
-		}
-	}
+	// if cfg.Tor.Active {
+	// 	cfg.net = &tor.ProxyNet{
+	// 		SOCKS:           cfg.Tor.SOCKS,
+	// 		DNS:             cfg.Tor.DNS,
+	// 		StreamIsolation: cfg.Tor.StreamIsolation,
+	// 	}
+	// }
 
 	if cfg.DisableListen && cfg.NAT {
 		return nil, errors.New("NAT traversal cannot be used when " +

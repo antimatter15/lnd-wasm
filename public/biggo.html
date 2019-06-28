@@ -5,6 +5,105 @@
 <script src="deps.js"></script>
 <script>
 
+let ws = new WebSocket('ws://localhost:7281')
+let readBuffer = {}
+
+
+function readFromSocket(id, buf, callback){
+    console.log('readey', id, buf, callback)
+    if(buf.length === 41) throw new Error('sdf')
+
+    once(() => (readBuffer[id] || []).length >= buf.length, true).then(data => {
+        console.log('ok thingy')
+        for(let i = 0; i < buf.length; i++){
+            buf[i] = readBuffer[id].shift()
+        }
+
+        callback(buf.length)
+    })
+}
+
+
+function resolveHost(host, callback){
+    // console.log('resolve', host)
+    let id = Math.random().toString(36).slice(3);
+
+    ws.send(JSON.stringify({
+        action: 'resolve',
+        id: id,
+        host: host
+    }))
+    once(k => k.action === 'resolve_finish' && k.id === id).then(data => {
+        // console.log('resolved', host, data.addresses.map(k => k.address))
+        callback((data.addresses || []).map(k => k.address))
+    })
+}
+
+
+function writeToSocket(id, data, callback){
+    console.log('writey', id, data, callback)
+
+    ws.send(JSON.stringify({
+        action: 'write',
+        id: id,
+        data: Array.from(data)
+    }))
+    once(k => k.action === 'write_finish').then(data => {
+        callback()
+    })
+}
+
+
+function dialSocket(host, port, callback){
+    // console.log('dial', host, port, callback)
+    ws.send(JSON.stringify({
+        action: 'dial',
+        host: host,
+        port: port
+    }))
+    once(k => k.action === 'dial_finish').then(data => {
+        callback(data.id)
+    })
+}
+
+
+let listeners = [];
+
+function once(test, initial){
+    return new Promise((resolve, reject) => {
+        function cb(data){
+            // console.log('testing')
+            if(test(data)){
+                // console.log('test positive')
+                listeners = listeners.filter(k => k !== cb)
+                resolve(data)
+            }
+        }
+        if(initial) cb(null)
+        listeners.push(cb)
+    })
+}
+
+ws.onmessage = e => {
+    let data = JSON.parse(e.data);
+    // console.log(data)
+
+    if(data.action === 'read'){
+        if(!readBuffer[data.id]) readBuffer[data.id] = [];
+        readBuffer[data.id].push(...data.data)
+    }
+    
+    for(let cb of listeners){
+        cb(data)
+    }
+
+}
+
+ws.onclose = () => {
+    console.log('websocket closed')
+}
+
+
 BrowserFS.configure({
     fs: "InMemory"
 }, function(e) {
@@ -13,9 +112,14 @@ BrowserFS.configure({
 });
 
 const go = new Go();
-WebAssembly.instantiateStreaming(fetch("biggo.wasm"), go.importObject).then((result) => {
-    go.run(result.instance);
-});
+
+ws.onopen = () => {
+    WebAssembly.instantiateStreaming(fetch("biggo.wasm"), go.importObject).then((result) => {
+        go.run(result.instance);
+    });
+}
+
+
 </script>
 </head>
 <body>

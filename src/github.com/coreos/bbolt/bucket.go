@@ -82,9 +82,39 @@ func (b *Bucket) Cursor() *Cursor {
 // Bucket retrieves a nested bucket by name.
 // Returns nil if the bucket does not exist.
 // The bucket instance is only valid for the lifetime of the transaction.
-func (b *Bucket) Bucket(name []byte) *Bucket {
-	bucket, _ := b.CreateBucketIfNotExists(name)
-	return bucket
+func (b *Bucket) Bucket(key []byte) *Bucket {
+	// bucket, _ := b.CreateBucketIfNotExists(name)
+	// return bucket
+	// return nil
+
+	sublevel := js.Global().Get("SubLevelDown").Invoke(b.sublevel, string(key))
+
+
+	done := make(chan js.Value)
+    callback := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+    	// fmt.Println("args len", len(args))
+    	done <- args[0]
+        return nil
+    })
+    defer callback.Release()    
+    getOptions := map[string]interface{}{ }
+    sublevel.Call("get", "!exists", getOptions, callback)
+    result := <-done
+    
+    if result.Truthy() {
+    	fmt.Println("this bucket does not yet exist", string(key))
+    	return nil
+    }
+
+    fmt.Println("this bucket does  exist", string(key))
+
+    return &Bucket{
+    	sublevel: sublevel,
+    	tx:     b.tx,
+    }
+
+    
+
 	// return nil
 	// if b.buckets != nil {
 	// 	if child := b.buckets[string(name)]; child != nil {
@@ -144,13 +174,43 @@ func (b *Bucket) Bucket(name []byte) *Bucket {
 // Returns an error if the key already exists, if the bucket name is blank, or if the bucket name is too long.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (b *Bucket) CreateBucket(key []byte) (*Bucket, error) {
+
+	if !b.tx.writable {
+		return nil, ErrTxNotWritable
+	} else if len(key) == 0 {
+		return nil, ErrBucketNameRequired
+	}
+
+	if b.Bucket(key) != nil {
+		return nil, ErrBucketExists
+	}
+
+
+	sublevel := js.Global().Get("SubLevelDown").Invoke(b.sublevel, string(key))
+
+
+	done := make(chan int)
+    callback := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+        done <- 42
+        return nil
+    })
+    defer callback.Release()    
+    putOptions := map[string]interface{}{ }
+    sublevel.Call("put", "!exists", "yes", putOptions, callback)
+    <-done
+    
+
+    fmt.Println("this bucket does created exist", string(key))
+
+	return &Bucket{
+    	sublevel: sublevel,
+    	tx:     b.tx,
+    }, nil
+
 	// if b.tx.db == nil {
 	// 	return nil, ErrTxClosed
-	// } else if !b.tx.writable {
-	// 	return nil, ErrTxNotWritable
-	// } else if len(key) == 0 {
-	// 	return nil, ErrBucketNameRequired
-	// }
+	// } else 
+
 
 	// // Move cursor to correct position.
 	// c := b.Cursor()
@@ -183,27 +243,20 @@ func (b *Bucket) CreateBucket(key []byte) (*Bucket, error) {
 
 	// return b.Bucket(key), nil
 	// return nil, nil
-	return b.CreateBucketIfNotExists(key)
+	// return b.CreateBucketIfNotExists(key)
 }
 
 // CreateBucketIfNotExists creates a new bucket if it doesn't already exist and returns a reference to it.
 // Returns an error if the bucket name is blank, or if the bucket name is too long.
 // The bucket instance is only valid for the lifetime of the transaction.
 func (b *Bucket) CreateBucketIfNotExists(key []byte) (*Bucket, error) {
-	// child, err := b.CreateBucket(key)
-	// if err == ErrBucketExists {
-	// 	return b.Bucket(key), nil
-	// } else if err != nil {
-	// 	return nil, err
-	// }
-	// return child, nil
-	// return nil, nil
-	bucket := js.Global().Get("SubLevelDown").Invoke(b.sublevel, string(key))
-	// fmt.Println("create bucket ifnot exists", bucket)
-    return &Bucket{
-    	sublevel: bucket,
-    	tx:     b.tx,
-    }, nil
+	bucket := b.Bucket(key)
+	if bucket == nil {
+		return b.CreateBucket(key)
+	}else {
+		return bucket, nil
+	}
+
 }
 
 // DeleteBucket deletes a bucket at the given key.
