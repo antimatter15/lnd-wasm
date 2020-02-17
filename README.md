@@ -10,6 +10,10 @@ Then arbitrary changes can be made to arbitrary dependencies with impunity.
 
 Rebasing and upgrading is left as an exercise to the reader. I have no idea how to do it. 
 
+## Status
+
+This doesn't actually work, but there are certain aspects of it which are promising. 
+
 ## Getting Started
 
 First, check out this repository. 
